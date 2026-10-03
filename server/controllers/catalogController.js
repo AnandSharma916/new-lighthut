@@ -686,16 +686,15 @@ export const getCatalog = async (req, res, next) => {
       categorySlugToCountMap[cat.slug] = count;
     });
 
-    // Compute parent family totals
-    const sourceGroups = allCategoriesInDb.length > 0 ? allCategoriesInDb : CATALOG_CATEGORY_GROUPS;
-    const structuredCategories = sourceGroups.map((group) => {
-      const staticDef = CATALOG_CATEGORY_GROUPS.find((g) => g.slug === group.slug);
+    // Compute parent family totals strictly for the 10 master architectural categories
+    const structuredCategories = CATALOG_CATEGORY_GROUPS.map((group) => {
+      const dbMatch = allCategoriesInDb.find((c) => c.slug === group.slug);
       const directTotal = categorySlugToCountMap[group.slug] || 0;
       let groupTotal = directTotal;
 
-      const rawSubs = Array.isArray(group.subcategories) && group.subcategories.length > 0
-        ? group.subcategories
-        : (staticDef?.subcategories || []);
+      const rawSubs = Array.isArray(dbMatch?.subcategories) && dbMatch.subcategories.length > 0
+        ? dbMatch.subcategories
+        : (group.subcategories || []);
 
       const subcategoriesWithCount = rawSubs
         .filter((s) => s.isActive !== false)
@@ -705,15 +704,12 @@ export const getCatalog = async (req, res, next) => {
           const subDirectCount = subcategoryCountMap[subSlug] || 0;
           const subCount = subDirectCount + subMatch;
           
-          // Parent without its own products: total is the sum of all its subcategories
-          if (!directTotal) {
-            groupTotal += subCount;
-          }
+          groupTotal += subCount;
 
           return {
             name: sub.name,
             slug: sub.slug,
-            image: sub.image || group.image || staticDef?.image || '/categories/wall-lamp.jpg',
+            image: sub.image || group.image || '/categories/wall-lamp.jpg',
             desc: sub.desc || 'Architectural Typology',
             count: subCount,
             productCount: subCount,
@@ -722,14 +718,14 @@ export const getCatalog = async (req, res, next) => {
         });
 
       return {
-        id: group._id ? group._id.toString() : null,
-        _id: group._id ? group._id.toString() : null,
+        id: dbMatch?._id ? dbMatch._id.toString() : group.slug,
+        _id: dbMatch?._id ? dbMatch._id.toString() : group.slug,
         name: group.name,
         slug: group.slug,
-        icon: group.icon || staticDef?.icon || '💡',
-        tag: group.tag || staticDef?.tag || '',
-        description: group.description || staticDef?.description || '',
-        image: group.image || staticDef?.image || '/categories/wall-lamp.jpg',
+        icon: group.icon || '💡',
+        tag: group.tag || '',
+        description: group.description || dbMatch?.description || '',
+        image: group.image || dbMatch?.image || '/categories/wall-lamp.jpg',
         total: groupTotal,
         productCount: groupTotal,
         count: groupTotal,

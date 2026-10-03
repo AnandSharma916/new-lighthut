@@ -79,6 +79,20 @@ const CATEGORY_META_HELPER = {
   },
 };
 
+// 10 Canonical Master Categories Slugs
+const MAIN_10_CATEGORY_SLUGS = [
+  'wall-lamp',
+  'pendant-lamp',
+  'chandelier',
+  'double-height',
+  'dining-table-lamp',
+  'outdoor-light',
+  'table-lamp',
+  'floor-lamp',
+  'led-filament-bulb',
+  'spare-part',
+];
+
 export const Catalog = () => {
   const { settings } = useSettings();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -119,6 +133,16 @@ export const Catalog = () => {
     !currentFeatured &&
     !currentSub &&
     viewMode === 'categories';
+
+  // Filter strictly to the 10 Master Categories for horizontal pills, cards, and sidebar
+  const mainCategories = useMemo(() => {
+    const mapBySlug = {};
+    categories.forEach((c) => {
+      mapBySlug[c.slug] = c;
+    });
+    const result = MAIN_10_CATEGORY_SLUGS.map((slug) => mapBySlug[slug]).filter(Boolean);
+    return result.length > 0 ? result : categories.slice(0, 10);
+  }, [categories]);
 
   // Document Title
   useEffect(() => {
@@ -724,7 +748,7 @@ export const Catalog = () => {
             All Categories ({allTotal || totalProducts})
           </button>
 
-          {categories.map((cat) => {
+          {mainCategories.map((cat) => {
             const isSelected =
               currentCategory === cat.slug || cat.subcategories?.some((s) => s.slug === currentCategory);
             const count = cat.total ?? cat.productsCount ?? 0;
@@ -1004,7 +1028,7 @@ export const Catalog = () => {
                   </span>
                 </button>
 
-                {categories.map((cat) => {
+                {mainCategories.map((cat) => {
                   const isParentActive = currentCategory === cat.slug;
                   const catConfig = PRODUCT_CATEGORIES_DATA.find((c) => c.slug === cat.slug);
                   const subList = catConfig?.sub || cat.subcategories || [];
@@ -1112,7 +1136,7 @@ export const Catalog = () => {
                     <h2 className="text-xl sm:text-2xl font-serif text-neutral-900 font-bold flex items-center gap-2">
                       <span>Architectural Lighting Collections</span>
                       <span className="text-xs font-sans font-bold px-2.5 py-0.5 rounded-full bg-red-50 text-[#DC2626] border border-red-200">
-                        {categories.length} Collections
+                        {mainCategories.length} Collections
                       </span>
                     </h2>
                     <p className="text-xs sm:text-sm text-neutral-500 mt-1">
@@ -1132,7 +1156,7 @@ export const Catalog = () => {
                       }`}
                     >
                       <LayoutGrid className="w-3.5 h-3.5 text-[#DC2626]" />
-                      <span>Collections ({categories.length})</span>
+                      <span>Collections ({mainCategories.length})</span>
                     </button>
                     <button
                       type="button"
@@ -1151,7 +1175,7 @@ export const Catalog = () => {
 
                 {/* The 10 Categories Cards */}
                 <div className="grid grid-cols-1 min-[480px]:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                  {categories.map((cat, idx) => {
+                  {mainCategories.map((cat, idx) => {
                     const meta = CATEGORY_META_HELPER[cat.slug] || {};
                     const catConfig = PRODUCT_CATEGORIES_DATA.find((c) => c.slug === cat.slug);
                     const subList = catConfig?.sub || cat.subcategories || [];
@@ -1307,7 +1331,7 @@ export const Catalog = () => {
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-neutral-600 hover:text-neutral-900 cursor-pointer"
                       >
                         <LayoutGrid className="w-3.5 h-3.5" />
-                        <span>Collections ({categories.length})</span>
+                        <span>Collections ({mainCategories.length})</span>
                       </button>
                       <button
                         type="button"
@@ -1440,7 +1464,7 @@ export const Catalog = () => {
                     <span>({allTotal || totalProducts})</span>
                   </button>
 
-                  {categories.map((cat) => {
+                  {mainCategories.map((cat) => {
                     const isSelected = currentCategory === cat.slug;
                     const catCfg = PRODUCT_CATEGORIES_DATA.find((c) => c.slug === cat.slug);
                     const subList = catCfg?.sub || cat.subcategories || [];
