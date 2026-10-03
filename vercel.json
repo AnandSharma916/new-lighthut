@@ -18,6 +18,7 @@
   },
   "rewrites": [
     { "source": "/api/(.*)", "destination": { "service": "server" } },
+    { "source": "/uploads/(.*)", "destination": { "service": "server" } },
     { "source": "/(.*)", "destination": { "service": "client" } }
   ]
 }

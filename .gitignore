@@ -22,7 +22,8 @@ yarn-error.log*
 *.log
 
 # Uploads & Temp files
-server/uploads/*
+server/uploads/*.tmp
+server/uploads/*.temp
 !server/uploads/.gitkeep
 
 # IDE / OS files
