@@ -703,16 +703,6 @@ export const Catalog = () => {
                 </span>
               </button>
 
-              {/* Secondary link for the master factory brochure */}
-              <a
-                href="/LH-FANCY 2608.pdf"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[10.5px] text-neutral-300 hover:text-white underline tracking-wider font-medium transition-colors"
-                title="Download 13MB Master Factory Catalog (LH-FANCY 2608.pdf)"
-              >
-                Or view 2026 Master Factory PDF (13MB)
-              </a>
             </div>
           </div>
         </div>
