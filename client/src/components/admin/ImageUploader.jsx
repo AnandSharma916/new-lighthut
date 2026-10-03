@@ -3,7 +3,7 @@ import { UploadCloud, X, Loader2, Image as ImageIcon } from 'lucide-react';
 import { uploadService } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 
-export const ImageUploader = ({ onUploadSuccess, label = 'Upload Image' }) => {
+export const ImageUploader = ({ onUploadSuccess, label = 'Upload Images', multiple = false }) => {
   const { addToast } = useToast();
   const [dragActive, setDragActive] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -11,24 +11,61 @@ export const ImageUploader = ({ onUploadSuccess, label = 'Upload Image' }) => {
 
   const handleFiles = async (files) => {
     if (!files || files.length === 0) return;
-    const file = files[0];
+    const fileList = Array.from(files);
 
-    // Validate size (max 10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      addToast('File size must be under 10MB.', 'error');
-      return;
+    // Validate size (max 10MB per file)
+    for (const file of fileList) {
+      if (file.size > 10 * 1024 * 1024) {
+        addToast(`"${file.name}" exceeds the 10MB limit.`, 'error');
+        return;
+      }
     }
 
     try {
       setUploading(true);
-      const formData = new FormData();
-      formData.append('file', file);
+      if (multiple && fileList.length > 1) {
+        const formData = new FormData();
+        fileList.forEach((file) => formData.append('files', file));
+        try {
+          const data = await uploadService.uploadMultiple(formData);
+          if (data.success && data.files && data.files.length > 0) {
+            addToast(`${data.files.length} photos uploaded successfully!`, 'success');
+            if (onUploadSuccess) {
+              onUploadSuccess(data.files.map((f) => f.url), data.files);
+            }
+            return;
+          }
+        } catch (multiErr) {
+          // If bulk route fails, fall back to individual uploads below
+        }
+      }
 
-      const data = await uploadService.uploadSingle(formData);
-      if (data.success && data.file) {
-        addToast('File uploaded successfully.', 'success');
+      // Upload sequentially
+      const uploadedUrls = [];
+      const uploadedDocs = [];
+      for (const file of fileList) {
+        const formData = new FormData();
+        formData.append('file', file);
+        const data = await uploadService.uploadSingle(formData);
+        if (data.success && data.file) {
+          uploadedUrls.push(data.file.url);
+          uploadedDocs.push(data.file);
+        }
+      }
+
+      if (uploadedUrls.length > 0) {
+        addToast(
+          uploadedUrls.length === 1
+            ? 'Photo uploaded successfully!'
+            : `${uploadedUrls.length} photos uploaded successfully!`,
+          'success'
+        );
         if (onUploadSuccess) {
-          onUploadSuccess(data.file.url, data.file);
+          if (multiple) {
+            onUploadSuccess(uploadedUrls, uploadedDocs);
+          } else {
+            onUploadSuccess(uploadedUrls[0], uploadedDocs[0]);
+          }
         }
       }
     } catch (err) {
@@ -53,6 +90,7 @@ export const ImageUploader = ({ onUploadSuccess, label = 'Upload Image' }) => {
       <input
         ref={fileInputRef}
         type="file"
+        multiple={multiple}
         accept="image/*,.pdf"
         className="hidden"
         onChange={(e) => handleFiles(e.target.files)}

@@ -164,7 +164,25 @@ export const ProductList = () => {
         shortDescription: form.description.trim().slice(0, 160),
         price: form.price !== '' ? Number(form.price) : 0,
         mainImage: photoUrl,
-        images: [{ url: photoUrl, isCover: true, alt: form.name.trim() }],
+        images: editingProduct?.images?.length > 1
+          ? (editingProduct.images.some((img) => (typeof img === 'string' ? img : img.url) === photoUrl)
+              ? editingProduct.images.map((img) => {
+                  const url = typeof img === 'string' ? img : img.url;
+                  return {
+                    url,
+                    isCover: url === photoUrl,
+                    alt: typeof img === 'object' ? img.alt || form.name.trim() : form.name.trim(),
+                  };
+                })
+              : [
+                  { url: photoUrl, isCover: true, alt: form.name.trim() },
+                  ...editingProduct.images.map((img) => ({
+                    url: typeof img === 'string' ? img : img.url,
+                    isCover: false,
+                    alt: typeof img === 'object' ? img.alt || form.name.trim() : form.name.trim(),
+                  })),
+                ])
+          : [{ url: photoUrl, isCover: true, alt: form.name.trim() }],
         isPublished: true,
       };
 

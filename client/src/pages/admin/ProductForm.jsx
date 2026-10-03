@@ -10,6 +10,9 @@ import {
   Image as ImageIcon,
   CheckCircle2,
   AlertCircle,
+  Star,
+  Trash2,
+  Plus,
 } from 'lucide-react';
 import { productService, categoryService } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
@@ -26,7 +29,7 @@ export const ProductForm = () => {
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // Form state with subcategory and full architectural specifications
+  // Form state with subcategory, specifications, and multi-image gallery
   const [formData, setFormData] = useState({
     name: '',          // Heading Name / Product Name
     category: '',      // Category ID
@@ -42,9 +45,10 @@ export const ProductForm = () => {
     voltage: '',       // Voltage (e.g. AC 220-240V)
     price: '',         // Product Price (₹)
     description: '',   // Product Description
-    photo: '',         // Product Photo URL
+    images: [],        // Array of { url, isCover, alt }
     sku: '',           // Auto-generated or existing SKU
   });
+  const [manualUrlInput, setManualUrlInput] = useState('');
 
   // Load Categories for dropdown
   useEffect(() => {
@@ -77,11 +81,31 @@ export const ProductForm = () => {
         const res = await productService.getProductById(id);
         if (res.success && res.product) {
           const p = res.product;
-          const coverImg =
-            p.mainImage ||
-            p.images?.find((img) => img.isCover)?.url ||
-            p.images?.[0]?.url ||
-            '';
+          
+          // Collect all product images into structured gallery items
+          const productImages = [];
+          if (Array.isArray(p.images) && p.images.length > 0) {
+            p.images.forEach((img, idx) => {
+              const url = typeof img === 'string' ? img : img.url;
+              if (url) {
+                productImages.push({
+                  url,
+                  isCover: typeof img === 'object' ? Boolean(img.isCover) : idx === 0,
+                  alt: typeof img === 'object' ? (img.alt || p.name) : p.name,
+                });
+              }
+            });
+          } else if (p.mainImage) {
+            productImages.push({
+              url: p.mainImage,
+              isCover: true,
+              alt: p.name || 'Cover Image',
+            });
+          }
+
+          if (productImages.length > 0 && !productImages.some((img) => img.isCover)) {
+            productImages[0].isCover = true;
+          }
 
           setFormData({
             name: p.name || p.title || '',
@@ -98,7 +122,7 @@ export const ProductForm = () => {
             voltage: p.specifications?.voltage || '',
             price: p.price ?? '',
             description: p.description || p.shortDescription || '',
-            photo: coverImg,
+            images: productImages,
             sku: p.sku || '',
           });
         } else {
@@ -120,9 +144,78 @@ export const ProductForm = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleUploadSuccess = (uploadedUrl) => {
-    setFormData((prev) => ({ ...prev, photo: uploadedUrl }));
-    addToast('Photo uploaded successfully!', 'success');
+  // Upload handler for single or multiple photos
+  const handleUploadSuccess = (uploaded) => {
+    const urls = Array.isArray(uploaded) ? uploaded : [uploaded];
+    setFormData((prev) => {
+      const current = [...(prev.images || [])];
+      const newItems = urls
+        .filter((u) => u && !current.some((existing) => existing.url === u))
+        .map((url, i) => ({
+          url,
+          isCover: current.length === 0 && i === 0,
+          alt: prev.name.trim() || 'Product Photo',
+        }));
+      const combined = [...current, ...newItems];
+      if (combined.length > 0 && !combined.some((img) => img.isCover)) {
+        combined[0].isCover = true;
+      }
+      return { ...prev, images: combined };
+    });
+    addToast(
+      urls.length > 1
+        ? `${urls.length} photos added to product gallery!`
+        : 'Photo added to product gallery!',
+      'success'
+    );
+  };
+
+  // Add manual photo URL / path
+  const handleAddManualUrl = () => {
+    const url = manualUrlInput.trim();
+    if (!url) return;
+    setFormData((prev) => {
+      const current = [...(prev.images || [])];
+      if (current.some((img) => img.url === url)) {
+        addToast('This photo is already added.', 'info');
+        return prev;
+      }
+      const newImages = [
+        ...current,
+        {
+          url,
+          isCover: current.length === 0,
+          alt: prev.name.trim() || 'Product Photo',
+        },
+      ];
+      return { ...prev, images: newImages };
+    });
+    setManualUrlInput('');
+    addToast('Photo URL added to gallery!', 'success');
+  };
+
+  // Set selected photo as Cover / Primary image
+  const handleSetCover = (indexToCover) => {
+    setFormData((prev) => ({
+      ...prev,
+      images: prev.images.map((img, idx) => ({
+        ...img,
+        isCover: idx === indexToCover,
+      })),
+    }));
+    addToast('Cover image updated!', 'info');
+  };
+
+  // Remove photo from gallery
+  const handleRemoveImage = (indexToRemove) => {
+    setFormData((prev) => {
+      const filtered = prev.images.filter((_, idx) => idx !== indexToRemove);
+      if (filtered.length > 0 && !filtered.some((img) => img.isCover)) {
+        filtered[0].isCover = true;
+      }
+      return { ...prev, images: filtered };
+    });
+    addToast('Photo removed from product.', 'info');
   };
 
   const handleSubmit = async (e) => {
@@ -145,7 +238,16 @@ export const ProductForm = () => {
         formData.sku.trim() ||
         `LH-${Date.now().toString().slice(-6)}-${Math.floor(100 + Math.random() * 900)}`;
 
-      const photoUrl = formData.photo.trim();
+      const coverImage =
+        formData.images.find((img) => img.isCover)?.url ||
+        formData.images[0]?.url ||
+        '';
+
+      const formattedImages = (formData.images || []).map((img, idx) => ({
+        url: img.url,
+        isCover: Boolean(img.isCover),
+        alt: img.alt || formData.name.trim() || `View ${idx + 1}`,
+      }));
 
       const payload = {
         name: formData.name.trim(),
@@ -156,10 +258,8 @@ export const ProductForm = () => {
         price: formData.price !== '' ? Number(formData.price) : 0,
         description: formData.description.trim(),
         shortDescription: formData.description.trim().slice(0, 160),
-        mainImage: photoUrl,
-        images: photoUrl
-          ? [{ url: photoUrl, isCover: true, alt: formData.name.trim() }]
-          : [],
+        mainImage: coverImage,
+        images: formattedImages,
         sku: generatedSku,
         specifications: {
           dimensions: formData.size.trim(),
@@ -549,63 +649,131 @@ export const ProductForm = () => {
             </p>
           </div>
 
-          {/* 5. Product Photo (Upload + URL Option + Live Preview) */}
+          {/* 5. Product Photos & Gallery (Upload Multiple + URLs + Cover Selection) */}
           <div className="space-y-4 pt-4 border-t border-white/10">
-            <label className="text-xs font-semibold uppercase tracking-wider text-neutral-300 flex items-center gap-1.5">
-              <ImageIcon className="w-3.5 h-3.5 text-[#DC2626]" />
-              <span>Product Photo</span>
-              <span className="text-[#DC2626]">*</span>
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-semibold uppercase tracking-wider text-neutral-300 flex items-center gap-1.5">
+                <ImageIcon className="w-3.5 h-3.5 text-[#DC2626]" />
+                <span>Product Photos / Gallery</span>
+                <span className="text-[#DC2626]">*</span>
+              </label>
+              <span className="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-white/5 border border-white/10 text-neutral-400">
+                {formData.images.length} {formData.images.length === 1 ? 'photo' : 'photos'} added
+              </span>
+            </div>
 
-            {/* Direct File Uploader */}
+            {/* Direct Multi-File Uploader */}
             <ImageUploader
-              label="Upload Product Photo"
+              label="Upload Product Photos (Select Multiple)"
+              multiple={true}
               onUploadSuccess={handleUploadSuccess}
             />
 
             {/* Photo URL Input Alternative */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-xs text-neutral-400">
-                <span>Or paste an Image URL / Path directly:</span>
+                <span>Or add Image URL / Path directly:</span>
+                <span className="text-[10px] text-neutral-500">Supports Postimages, ImgBB, Unsplash, /uploads</span>
               </div>
-              <input
-                type="text"
-                name="photo"
-                value={formData.photo}
-                onChange={(e) => setFormData((prev) => ({ ...prev, photo: e.target.value }))}
-                placeholder="e.g. /categories/chandelier.jpg or https://images.unsplash.com/..."
-                className="w-full px-4 py-2.5 rounded-xl bg-black/30 border border-white/10 text-white text-xs font-mono placeholder-neutral-500 focus:border-[#DC2626] focus:outline-none"
-              />
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={manualUrlInput}
+                  onChange={(e) => setManualUrlInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddManualUrl();
+                    }
+                  }}
+                  placeholder="e.g. /categories/chandelier.jpg or https://i.postimg.cc/..."
+                  className="flex-1 px-4 py-2.5 rounded-xl bg-black/30 border border-white/10 text-white text-xs font-mono placeholder-neutral-500 focus:border-[#DC2626] focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={handleAddManualUrl}
+                  disabled={!manualUrlInput.trim()}
+                  className="px-4 py-2.5 rounded-xl bg-[#DC2626] hover:bg-[#b91c1c] text-white text-xs font-semibold flex items-center gap-1.5 disabled:opacity-40 disabled:pointer-events-none transition-all cursor-pointer shrink-0"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add URL</span>
+                </button>
+              </div>
             </div>
 
-            {/* Live Photo Preview */}
-            {formData.photo && (
-              <div className="p-4 rounded-xl bg-black/40 border border-white/10 flex items-center gap-4">
-                <div className="w-24 h-24 rounded-lg overflow-hidden border border-white/20 bg-neutral-900 shrink-0">
-                  <img
-                    src={formData.photo}
-                    alt="Photo Preview"
-                    onError={(e) => {
-                      e.currentTarget.onerror = null;
-                      e.currentTarget.src = '/categories/chandelier.jpg';
-                    }}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div className="space-y-1 min-w-0">
-                  <span className="text-xs font-semibold text-emerald-400 flex items-center gap-1">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> Photo Selected & Ready
+            {/* Gallery Grid (Live Previews, Set Cover, Delete) */}
+            {formData.images.length > 0 && (
+              <div className="space-y-2 pt-2">
+                <div className="flex items-center justify-between text-xs text-neutral-400">
+                  <span className="font-medium text-neutral-300">Attached Product Photos:</span>
+                  <span className="text-[11px] text-amber-400/90 flex items-center gap-1">
+                    <Star className="w-3 h-3 fill-amber-400" /> Star marks the Primary / Cover image
                   </span>
-                  <p className="text-[11px] text-neutral-400 truncate font-mono">
-                    {formData.photo}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setFormData((prev) => ({ ...prev, photo: '' }))}
-                    className="text-[11px] text-red-400 hover:text-red-300 hover:underline"
-                  >
-                    Remove Photo
-                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 p-3 rounded-2xl bg-black/40 border border-white/10">
+                  {formData.images.map((img, idx) => (
+                    <div
+                      key={img.url + idx}
+                      className={`relative group rounded-xl overflow-hidden border bg-neutral-900 aspect-square flex flex-col justify-between transition-all ${
+                        img.isCover
+                          ? 'border-amber-400 ring-2 ring-amber-400/30 shadow-lg'
+                          : 'border-white/10 hover:border-white/30'
+                      }`}
+                    >
+                      <img
+                        src={img.url}
+                        alt={img.alt || `Photo ${idx + 1}`}
+                        onError={(e) => {
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.src = '/categories/chandelier.jpg';
+                        }}
+                        className="w-full h-full object-cover absolute inset-0"
+                      />
+
+                      {/* Gradient Overlay for controls */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40 opacity-90 group-hover:opacity-100 transition-opacity" />
+
+                      {/* Top Header: Badge & Delete */}
+                      <div className="relative z-10 p-2 flex items-center justify-between">
+                        {img.isCover ? (
+                          <span className="px-2 py-0.5 rounded-md bg-amber-500 text-black text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 shadow-sm">
+                            <Star className="w-2.5 h-2.5 fill-black" /> Cover
+                          </span>
+                        ) : (
+                          <span className="px-1.5 py-0.5 rounded bg-black/60 text-neutral-400 text-[10px] font-mono">
+                            #{idx + 1}
+                          </span>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveImage(idx)}
+                          title="Remove Photo"
+                          className="w-6 h-6 rounded-full bg-red-600/80 hover:bg-red-600 text-white flex items-center justify-center transition-transform hover:scale-110 shadow-sm cursor-pointer"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+
+                      {/* Bottom Footer: Set Cover Button */}
+                      <div className="relative z-10 p-2">
+                        {!img.isCover ? (
+                          <button
+                            type="button"
+                            onClick={() => handleSetCover(idx)}
+                            className="w-full py-1 rounded-md bg-black/70 hover:bg-amber-500 hover:text-black text-neutral-200 text-[10px] font-semibold transition-all border border-white/20 hover:border-amber-500 flex items-center justify-center gap-1 cursor-pointer"
+                          >
+                            <Star className="w-2.5 h-2.5" /> Set as Cover
+                          </button>
+                        ) : (
+                          <span className="text-[10px] text-amber-300 font-medium block text-center truncate">
+                            Primary Showcase
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
