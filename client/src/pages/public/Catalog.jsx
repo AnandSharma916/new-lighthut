@@ -690,7 +690,7 @@ export const Catalog = () => {
               <button
                 type="button"
                 onClick={handleDownloadCatalog}
-                className="relative inline-flex items-center gap-2.5 px-5 py-3 rounded-2xl bg-gradient-to-r from-[#DC2626] to-[#b91c1c] text-white text-xs sm:text-[13px] font-black uppercase tracking-wider shadow-[0_8px_25px_rgba(220,38,38,0.55)] border-2 border-white/60 hover:border-white hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer group ring-4 ring-[#DC2626]/30 overflow-hidden"
+                className="relative inline-flex items-center justify-center w-full sm:w-auto gap-2.5 px-5 py-3 rounded-2xl bg-gradient-to-r from-[#DC2626] to-[#b91c1c] text-white text-xs sm:text-[13px] font-black uppercase tracking-wider shadow-[0_8px_25px_rgba(220,38,38,0.55)] border-2 border-white/60 hover:border-white hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer group ring-4 ring-[#DC2626]/30 overflow-hidden text-center"
                 title={`Download official PDF specification catalog for ${activeCategoryData.name}`}
               >
                 {/* Glowing Sheen Animation */}
@@ -718,7 +718,7 @@ export const Catalog = () => {
         </div>
 
         {/* ── Horizontal Category Quick Filter Bar with Real Live Counts ── */}
-        <div className="mt-4 flex items-center gap-2 overflow-x-auto py-2 scrollbar-none">
+        <div className="mt-4 flex items-center gap-2 overflow-x-auto py-2 scrollbar-none touch-pan-x -mx-4 px-4 sm:mx-0 sm:px-0">
           <button
             type="button"
             onClick={() => {
@@ -764,7 +764,7 @@ export const Catalog = () => {
           const activeCatConfig = PRODUCT_CATEGORIES_DATA.find((c) => c.slug === currentCategory);
           if (!activeCatConfig?.sub || activeCatConfig.sub.length === 0) return null;
           return (
-            <div className="mt-3 flex items-center gap-2 overflow-x-auto py-2 scrollbar-thin bg-white p-2.5 rounded-2xl border border-neutral-200/90 shadow-2xs">
+            <div className="mt-3 flex items-center gap-2 overflow-x-auto py-2 scrollbar-none touch-pan-x bg-white p-2.5 rounded-2xl border border-neutral-200/90 shadow-2xs -mx-4 px-4 sm:mx-0 sm:px-2.5">
               <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-neutral-500 shrink-0 px-2 border-r border-neutral-200 mr-1">
                 <Layers className="w-3.5 h-3.5 text-[#DC2626]" />
                 <span>{activeCatConfig.name} Types:</span>
@@ -839,8 +839,8 @@ export const Catalog = () => {
           </form>
 
           <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end flex-wrap">
-            {/* Quick Cascading Hierarchy Dropdown Button */}
-            <div className="relative">
+            {/* Quick Cascading Hierarchy Dropdown Button (Desktop & Tablet only; Mobile uses dedicated filter drawer) */}
+            <div className="relative hidden sm:block">
               <button
                 type="button"
                 id="catalog-cascading-dropdown-btn"
@@ -1160,7 +1160,7 @@ export const Catalog = () => {
                 </div>
 
                 {/* The 10 Categories Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 min-[480px]:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                   {categories.map((cat, idx) => {
                     const meta = CATEGORY_META_HELPER[cat.slug] || {};
                     const catConfig = PRODUCT_CATEGORIES_DATA.find((c) => c.slug === cat.slug);
@@ -1331,7 +1331,7 @@ export const Catalog = () => {
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 min-[480px]:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                   {displayedProducts.map((product) => (
                     <ProductCard key={product._id || product.slug} product={product} />
                   ))}
@@ -1413,23 +1413,23 @@ export const Catalog = () => {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="relative w-full max-w-xs bg-white h-full shadow-2xl z-10 p-6 flex flex-col justify-between overflow-y-auto"
+              className="relative w-full max-w-xs bg-white h-full shadow-2xl z-10 p-5 sm:p-6 flex flex-col justify-between overflow-hidden"
             >
-              <div>
-                <div className="flex items-center justify-between pb-4 border-b border-neutral-200">
-                  <h3 className="font-serif text-lg font-bold text-neutral-900 flex items-center gap-2">
-                    <Filter className="w-4 h-4 text-[#DC2626]" /> Filter Fixtures
-                  </h3>
-                  <button
-                    type="button"
-                    onClick={() => setMobileFilterOpen(false)}
-                    className="p-1 rounded-lg text-neutral-400 hover:text-neutral-700 cursor-pointer"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
+              <div className="flex items-center justify-between pb-4 border-b border-neutral-200 shrink-0">
+                <h3 className="font-serif text-lg font-bold text-neutral-900 flex items-center gap-2">
+                  <Filter className="w-4 h-4 text-[#DC2626]" /> Filter Fixtures
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setMobileFilterOpen(false)}
+                  className="p-1 rounded-lg text-neutral-400 hover:text-neutral-700 cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
 
-                <div className="mt-4 space-y-1">
+              <div className="flex-1 overflow-y-auto py-3 space-y-4 pr-1">
+                <div className="space-y-1">
                   <span className="text-[11px] uppercase tracking-wider text-neutral-400 font-bold block mb-2">
                     Select Category
                   </span>
@@ -1518,7 +1518,7 @@ export const Catalog = () => {
                   })}
                 </div>
 
-                <div className="mt-6 pt-4 border-t border-neutral-200">
+                <div className="pt-3 border-t border-neutral-200">
                   <label className="flex items-center gap-3 cursor-pointer">
                     <input
                       type="checkbox"
@@ -1535,7 +1535,7 @@ export const Catalog = () => {
                 </div>
               </div>
 
-              <div className="mt-8 pt-4 border-t border-neutral-200 flex gap-2">
+              <div className="pt-4 border-t border-neutral-200 flex gap-2 shrink-0 bg-white">
                 <button
                   type="button"
                   onClick={() => {
@@ -1549,7 +1549,7 @@ export const Catalog = () => {
                 <button
                   type="button"
                   onClick={() => setMobileFilterOpen(false)}
-                  className="flex-1 py-2.5 rounded-xl bg-[#DC2626] text-xs font-bold text-white hover:bg-[#b91c1c] cursor-pointer"
+                  className="flex-1 py-2.5 rounded-xl bg-[#DC2626] text-xs font-bold text-white hover:bg-[#b91c1c] cursor-pointer shadow-sm"
                 >
                   Apply Filters
                 </button>

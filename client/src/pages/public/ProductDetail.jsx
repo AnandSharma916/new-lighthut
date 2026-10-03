@@ -21,6 +21,7 @@ import {
   Eye,
   MapPin,
   Building2,
+  Phone,
 } from 'lucide-react';
 import { productService } from '../../services/api';
 import { ProductCard } from '../../components/catalog/ProductCard';
@@ -277,7 +278,7 @@ export const ProductDetail = () => {
   };
 
   return (
-    <div className="pt-24 pb-20 bg-white min-h-screen text-neutral-900">
+    <div className="pt-24 pb-28 sm:pb-20 bg-white min-h-screen text-neutral-900">
       {/* Draft Notification Banner */}
       {!product.isPublished && (
         <div className="bg-amber-50 border-b border-amber-200 text-amber-800 py-2.5 px-4 text-center text-xs font-medium flex items-center justify-center gap-2">
@@ -427,7 +428,7 @@ export const ProductDetail = () => {
                   e.stopPropagation();
                   handlePrevImage();
                 }}
-                className="absolute left-3.5 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/60 hover:bg-black/85 text-white flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 shadow-md hover:scale-110"
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black/65 hover:bg-black/85 text-white flex items-center justify-center transition-all opacity-90 sm:opacity-0 sm:group-hover:opacity-100 shadow-md hover:scale-110 active:scale-95 cursor-pointer"
                 aria-label="Previous view"
               >
                 <ChevronLeft className="w-5 h-5" />
@@ -440,7 +441,7 @@ export const ProductDetail = () => {
                   e.stopPropagation();
                   handleNextImage();
                 }}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/60 hover:bg-black/85 text-white flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 shadow-md hover:scale-110"
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black/65 hover:bg-black/85 text-white flex items-center justify-center transition-all opacity-90 sm:opacity-0 sm:group-hover:opacity-100 shadow-md hover:scale-110 active:scale-95 cursor-pointer"
                 aria-label="Next view"
               >
                 <ChevronRight className="w-5 h-5" />
@@ -906,6 +907,37 @@ export const ProductDetail = () => {
           </div>
         )}
       </AnimatePresence>
+
+      {/* ── Mobile Sticky Bottom Action Bar (Instant Inquiry & WhatsApp) ── */}
+      <div className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-neutral-200/90 px-4 py-3 shadow-[0_-8px_25px_rgba(0,0,0,0.1)] flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <div className="text-[10px] text-neutral-500 font-semibold truncate tracking-wider uppercase">
+            {product.sku || 'SKU'} • Studio Price
+          </div>
+          <div className="font-extrabold text-[#DC2626] text-base leading-tight font-mono">
+            {formattedPrice}
+          </div>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <a
+            href={`https://wa.me/919811869622?text=${encodeURIComponent(`Hello Light-Hut, I am interested in: ${product.name} (SKU: ${product.sku || ''}). Please share details.`)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="p-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm flex items-center justify-center transition-colors active:scale-95"
+            title="Chat on WhatsApp"
+          >
+            <Phone className="w-4 h-4" />
+          </a>
+          <button
+            type="button"
+            onClick={() => setInquiryOpen(true)}
+            className="btn-gold py-2.5 px-4 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-md active:scale-95 cursor-pointer"
+          >
+            <Send className="w-3.5 h-3.5" />
+            <span>Inquiry</span>
+          </button>
+        </div>
+      </div>
 
       <InquiryModal isOpen={inquiryOpen} onClose={() => setInquiryOpen(false)} product={product} />
     </div>

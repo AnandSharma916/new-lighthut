@@ -62,12 +62,12 @@ export const CategoryBannersGrid = () => {
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6">
         
         {/* 5-Column Category Banner Grid with Image Swap and Content Reveal on Hover */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 lg:gap-5">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-5">
           {FEATURED_BANNERS.map((banner) => (
             <motion.div
               key={banner.id}
               initial={{ opacity: 1, y: 0 }}
-              className="w-full"
+              className="w-full last:col-span-2 md:last:col-span-1"
             >
               <Link
                 to={banner.link}
