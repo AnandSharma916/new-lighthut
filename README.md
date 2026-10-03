@@ -35,8 +35,8 @@ LightHut is a modern full-stack web application designed for luxury architectura
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/AnandSharma916/LIght-hut-live.git
-cd LIght-hut-live
+git clone https://github.com/AnandSharma916/new-lighthut.git
+cd new-lighthut
 ```
 
 ### 2. Install Dependencies
