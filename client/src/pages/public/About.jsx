@@ -22,6 +22,8 @@ import {
   Download,
   ExternalLink,
   X,
+  Factory,
+  Handshake,
 } from 'lucide-react';
 import { useSettings } from '../../context/SettingsContext';
 import { LightHut } from '../../components/common/BrandWordmark';
@@ -69,69 +71,69 @@ export const About = () => {
 
   const craftsmanshipPillars = [
     {
-      icon: <Hammer className="w-6 h-6 text-[#DC2626]" />,
-      title: 'PVD Solid Metallurgy',
-      subtitle: 'Pure Brass & Aircraft Alloys',
+      icon: <Factory className="w-6 h-6 text-[#DC2626]" />,
+      title: 'In-House Manufacturing Excellence',
+      subtitle: 'State-of-the-Art Infrastructure',
       description:
-        'Every fixture begins with high-density solid brass and marine-grade aluminum. Finished with aerospace PVD (Physical Vapor Deposition) and multi-stage hand buffing to ensure anti-tarnish protection against tropical humidity.',
-      specs: 'Solid Brass • Hand-Brushed Champagne Gold • Anti-Oxidation Seal',
+        'We take pride in possessing state-of-the-art manufacturing facilities, which enable us to develop innovative products while maintaining high quality. This infrastructure also allows us to ensure timely delivery to our customers, as we believe that customer satisfaction is the key to our success.',
+      specs: 'Advanced Facilities • Innovative Design • On-Time Delivery',
     },
     {
-      icon: <Sparkles className="w-6 h-6 text-[#DC2626]" />,
-      title: 'K9 Optical Crystal & Fluted Glass',
-      subtitle: 'Diamond Facets & Mouth-Blown Glass',
+      icon: <ShieldCheck className="w-6 h-6 text-[#DC2626]" />,
+      title: 'Quality Ensuring',
+      subtitle: 'BIS-Approved Standards',
       description:
-        'We select optical-grade K9 crystal with high refractive indices that split warm light into shimmering diamond highlights without harsh glare. Complemented by mouth-blown fluted borosilicate glass for diffuse, velvety illumination.',
-      specs: 'Zero Blemishes • 99.2% Clarity • Hand-Beveled Prisms',
+        'All our products are BIS-approved in accordance with Government of India standards. This instills confidence and guarantees that our products are of excellent quality and long life.',
+      specs: 'BIS Certified • Govt. of India Compliant • Guaranteed Long Life',
     },
     {
-      icon: <Eye className="w-6 h-6 text-[#DC2626]" />,
-      title: 'Circadian Eye-Comfort LEDs',
-      subtitle: 'Ra > 95 True Color Fidelity',
+      icon: <Award className="w-6 h-6 text-[#DC2626]" />,
+      title: 'Our Strength / Why Customers Choose Us...',
+      subtitle: 'Zero Compromise on Quality',
       description:
-        'We engineer lighting for biological wellbeing. Using flicker-free constant-current drivers and warm 2700K–3000K diodes with a Color Rendering Index exceeding Ra > 95, your interiors retain their authentic natural richness.',
-      specs: 'Flicker-Free Driver • 2700K Warm White • Triac & DALI Dimming',
+        'We sell only quality products and do not compromise on quality for any reason. We value our customers’ money.',
+      specs: 'Strict Quality Control • Uncompromising Standards • True Value',
     },
     {
-      icon: <Layers className="w-6 h-6 text-[#DC2626]" />,
-      title: 'Bespoke Suspension Engineering',
-      subtitle: 'Tailored Drops up to 10 Meters',
+      icon: <Handshake className="w-6 h-6 text-[#DC2626]" />,
+      title: 'Our Belief and Policy',
+      subtitle: 'Quality Consistency & Fair Terms',
       description:
-        'From high-ceiling stairwells to monumental double-height foyers, our in-house structural engineers customize suspension cables, multi-tiered ceiling plates, and reinforced weight-bearing canopies for flawless alignment.',
-      specs: 'Reinforced Steel Cables • Custom Rod Lengths • Seismic Brackets',
+        'Rate negotiations are acceptable as long as quality consistency is maintained.',
+      specs: 'Transparent Pricing • Quality Consistency • Enduring Relationships',
     },
   ];
 
   const qualitySteps = [
     {
       step: '01',
-      title: 'Spatial Blueprint Review',
+      title: 'Highest Standard Material Testing',
       description:
-        'Our design team evaluates your room dimensions, ceiling height, and natural lighting angles to recommend the ideal scale and suspension drop.',
+        'The ingredients and materials that make up every product are tested to the highest industry standards for purity and resilience.',
     },
     {
       step: '02',
-      title: 'Photometric Simulation',
+      title: 'Premium LEDs & Drivers',
       description:
-        'We model beam angles, lux distribution, and ambient layering to eliminate shadows and prevent uncomfortable glare across living and dining areas.',
+        "Only good quality LED lights and drivers are used, so you don't have to face the hassle of frequent replacements.",
     },
     {
       step: '03',
-      title: 'Master Artisan Handcrafting',
+      title: 'Expert Designer Aesthetics',
       description:
-        'Skilled artisans turn brass components, hand-polish crystal facets, and wire high-performance LED circuits according to strict architectural tolerances.',
+        'The design of each product is created by skilled designers to enhance the beauty of your home and rooms with an amazing feeling.',
     },
     {
       step: '04',
-      title: '48-Hour Burn-In Stress Test',
+      title: 'Durable Quality Plating',
       description:
-        'Every luminaire undergoes a continuous 48-hour burn-in thermal test, voltage surge analysis, and driver stability check before receiving quality certification.',
+        'Only the best quality plating and surface treatments are used to maintain superior durability and long-lasting lustre.',
     },
     {
       step: '05',
-      title: 'Triple-Layer Crated Dispatch',
+      title: 'Priority After-Sales Service',
       description:
-        'Protected by high-density custom-molded foam and reinforced wooden outer crates with 100% transit breakage replacement insurance across India.',
+        'After sales, providing comprehensive service to our customers and resolving their problems promptly is our first priority.',
     },
   ];
 
@@ -238,11 +240,11 @@ export const About = () => {
             </div>
 
             <p className="text-sm sm:text-base text-neutral-600 leading-relaxed font-normal">
-              Based in Delhi, our studio was born from a singular passion: creating fixtures that honor the delicate relationship between architecture, shadow, and warm illumination. Where mass-produced fixtures prioritize speed, we commit to slow, meticulous perfection.
+              LIGHT-HUT Decorative Solutions is a professional brand specializing in commercial and fancy decorative lighting, capable of providing high quality lighting products of all types. Although the company was established in 2022, we bring over 12 years of experience in the lighting industry.
             </p>
 
             <p className="text-sm sm:text-base text-neutral-600 leading-relaxed font-normal">
-              Every curve of hand-spun brass, every facet of optical crystal, and every LED diode is calibrated to emit light that soothes the eyes, flatters natural materials, and brings people together around dinner tables and living rooms.
+              We have an excellent team dedicated to product design and quality assurance, and all our products are manufactured under the supervision of experts. We consistently strive to offer our customers top quality products featuring the latest designs at highly affordable rates.
             </p>
 
             {/* Quick Metrics */}
@@ -275,7 +277,7 @@ export const About = () => {
               The 4 Pillars of Our Craftsmanship
             </h2>
             <p className="text-sm text-neutral-600 leading-relaxed font-normal">
-              From raw metallurgy to optical refraction, discover how every luminaire is engineered to provide decades of luminous beauty.
+              From state-of-the-art in-house manufacturing to BIS-approved quality assurance and customer-first policies, discover what sets us apart.
             </p>
           </div>
 
@@ -317,13 +319,13 @@ export const About = () => {
       <section className="py-20 sm:py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-2xl mx-auto mb-16 space-y-3">
           <span className="text-xs uppercase tracking-luxury text-[#DC2626] font-bold block">
-            Precision Execution
+            Quality Assurance
           </span>
           <h2 className="text-3xl sm:text-4xl font-serif-luxury font-bold text-neutral-900">
-            Our 5-Step Quality & Crating Protocol
+            Our 5-Point Quality & Service Standards
           </h2>
           <p className="text-sm text-neutral-600 leading-relaxed font-normal">
-            Every luminaire is tracked from architectural design drawings to shockproof wooden crating.
+            From tested materials and expert design to durable plating and dedicated after-sales service.
           </p>
         </div>
 
@@ -346,7 +348,7 @@ export const About = () => {
               </div>
               <div className="mt-4 pt-3 border-t border-neutral-100 flex items-center gap-1 text-[10.5px] font-semibold text-[#DC2626]">
                 <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>Audited Step</span>
+                <span>Verified Standard</span>
               </div>
             </div>
           ))}

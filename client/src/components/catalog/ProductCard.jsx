@@ -49,7 +49,7 @@ const CATEGORY_HOVER_MAP = {
 };
 
 // Fallback cover image by category / subcategory
-const getCategoryDefaultCover = (cat) => {
+export const getCategoryDefaultCover = (cat) => {
   const c = String(cat || '').toLowerCase();
   if (c.includes('e14')) return '/categories/e14-chandelier.jpg';
   if (c.includes('profile')) return '/categories/profile-chandelier.jpg';
