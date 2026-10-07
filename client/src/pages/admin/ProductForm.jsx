@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -13,11 +13,27 @@ import {
   Star,
   Trash2,
   Plus,
+  Upload,
+  FolderOpen,
+  RefreshCw,
+  Link as LinkIcon,
 } from 'lucide-react';
-import { productService, categoryService } from '../../services/api';
+import { productService, categoryService, uploadService } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import { ImageUploader } from '../../components/admin/ImageUploader';
 import { CategorySelectorWithOptions } from '../../components/admin/CategorySelectorWithOptions';
+
+const PRESET_MEDIA_OPTIONS = [
+  { label: 'Chandelier Default (/categories/chandelier.jpg)', url: '/categories/chandelier.jpg' },
+  { label: 'Wall Light Default (/categories/wall.jpg)', url: '/categories/wall.jpg' },
+  { label: 'Ceiling Light Default (/categories/ceiling.jpg)', url: '/categories/ceiling.jpg' },
+  { label: 'Outdoor Light Default (/categories/outdoor.jpg)', url: '/categories/outdoor.jpg' },
+  { label: 'Commercial Light Default (/categories/commercial.jpg)', url: '/categories/commercial.jpg' },
+  { label: 'Pendant / Hanging Light (/categories/hanging.jpg)', url: '/categories/hanging.jpg' },
+  { label: 'Grand Palace Staircase Chandelier (/philosophy-grand-chandelier.jpg)', url: '/philosophy-grand-chandelier.jpg' },
+  { label: 'Craft Workshop (/craft-main.jpg)', url: '/craft-main.jpg' },
+  { label: 'Showroom Hero Gallery (/showroom-hero-hd.jpg)', url: '/showroom-hero-hd.jpg' },
+];
 
 export const ProductForm = () => {
   const { id } = useParams();
@@ -28,6 +44,13 @@ export const ProductForm = () => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  // Media Library & Direct Browser Upload State
+  const [mediaLibraryItems, setMediaLibraryItems] = useState([]);
+  const [loadingMedia, setLoadingMedia] = useState(false);
+  const [selectedMediaUrl, setSelectedMediaUrl] = useState('');
+  const [browserUploading, setBrowserUploading] = useState(false);
+  const browseInputRef = useRef(null);
 
   // Form state with subcategory, specifications, and multi-image gallery
   const [formData, setFormData] = useState({
@@ -216,6 +239,104 @@ export const ProductForm = () => {
       return { ...prev, images: filtered };
     });
     addToast('Photo removed from product.', 'info');
+  };
+
+  // Load media library assets from server
+  const loadMediaLibrary = useCallback(async () => {
+    try {
+      setLoadingMedia(true);
+      const res = await uploadService.getMediaLibrary({ limit: 100 });
+      if (res && res.success) {
+        setMediaLibraryItems(res.files || res.media || []);
+      }
+    } catch (err) {
+      console.warn('[ProductForm] Could not load media library:', err.message);
+    } finally {
+      setLoadingMedia(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadMediaLibrary();
+  }, [loadMediaLibrary]);
+
+  // Handle direct file selection from browser / PC
+  const handleNativeFileSelect = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    for (const file of files) {
+      if (file.size > 10 * 1024 * 1024) {
+        addToast(`"${file.name}" exceeds the 10MB limit.`, 'error');
+        return;
+      }
+    }
+
+    try {
+      setBrowserUploading(true);
+      let uploadedUrls = [];
+
+      if (files.length > 1) {
+        const formData = new FormData();
+        files.forEach((file) => formData.append('files', file));
+        try {
+          const res = await uploadService.uploadMultiple(formData);
+          if (res && res.success && res.files && res.files.length > 0) {
+            uploadedUrls = res.files.map((f) => f.url);
+          }
+        } catch (multiErr) {
+          console.warn('Batch upload fallback:', multiErr);
+        }
+      }
+
+      if (uploadedUrls.length === 0) {
+        for (const file of files) {
+          const formData = new FormData();
+          formData.append('file', file);
+          const res = await uploadService.uploadSingle(formData);
+          if (res && res.success && res.file && res.file.url) {
+            uploadedUrls.push(res.file.url);
+          }
+        }
+      }
+
+      if (uploadedUrls.length > 0) {
+        handleUploadSuccess(uploadedUrls);
+        addToast(`${uploadedUrls.length} photo(s) uploaded successfully from computer!`, 'success');
+        loadMediaLibrary();
+      } else {
+        addToast('No images were uploaded.', 'error');
+      }
+    } catch (err) {
+      addToast(err.response?.data?.message || 'Failed to upload selected images.', 'error');
+    } finally {
+      setBrowserUploading(false);
+      if (e.target) e.target.value = '';
+    }
+  };
+
+  // Add selected image from Media dropdown into product gallery
+  const handleAddFromMediaDropdown = () => {
+    if (!selectedMediaUrl) {
+      addToast('Please select an image from the dropdown first.', 'warning');
+      return;
+    }
+    const url = selectedMediaUrl.trim();
+    setFormData((prev) => {
+      const current = [...(prev.images || [])];
+      if (!current.some((img) => img.url === url)) {
+        current.push({
+          url,
+          isCover: current.length === 0,
+          alt: prev.name.trim() || 'Product Photo',
+        });
+        addToast('Media image added to gallery!', 'success');
+      } else {
+        addToast('This image is already in the gallery.', 'info');
+      }
+      return { ...prev, images: current };
+    });
+    setSelectedMediaUrl('');
   };
 
   const handleSubmit = async (e) => {
@@ -662,43 +783,177 @@ export const ProductForm = () => {
               </span>
             </div>
 
-            {/* Direct Multi-File Uploader */}
-            <ImageUploader
-              label="Upload Product Photos (Select Multiple)"
-              multiple={true}
-              onUploadSuccess={handleUploadSuccess}
+            {/* Hidden browser file picker input */}
+            <input
+              ref={browseInputRef}
+              type="file"
+              multiple
+              accept="image/*"
+              className="hidden"
+              onChange={handleNativeFileSelect}
             />
 
-            {/* Photo URL Input Alternative */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between text-xs text-neutral-400">
-                <span>Or add Image URL / Path directly:</span>
-                <span className="text-[10px] text-neutral-500">Supports Postimages, ImgBB, Unsplash, /uploads</span>
+            {/* ── 3 Clear Ways to Add Photos ── */}
+            <div className="space-y-3.5">
+              
+              {/* WAY 1: Direct Browser File Selection & Upload */}
+              <div className="p-3.5 rounded-xl bg-black/40 border border-white/10 space-y-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                  <div>
+                    <span className="text-[11px] uppercase tracking-wider text-white font-semibold flex items-center gap-1.5">
+                      <Upload className="w-3.5 h-3.5 text-[#DC2626]" />
+                      <span>1. Select & Upload from Browser / PC</span>
+                    </span>
+                    <p className="text-[10px] text-neutral-400 mt-0.5">
+                      Browse single or multiple images directly from your computer to upload
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => browseInputRef.current?.click()}
+                    disabled={browserUploading}
+                    className="px-4 py-2.5 rounded-xl bg-[#DC2626] hover:bg-[#b91c1c] text-white font-semibold text-xs flex items-center justify-center gap-2 shadow-lg shadow-[#DC2626]/20 transition-all disabled:opacity-50 shrink-0 cursor-pointer"
+                  >
+                    {browserUploading ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Uploading from PC...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>Browse Photos from PC</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={manualUrlInput}
-                  onChange={(e) => setManualUrlInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleAddManualUrl();
-                    }
-                  }}
-                  placeholder="e.g. /categories/chandelier.jpg or https://i.postimg.cc/..."
-                  className="flex-1 px-4 py-2.5 rounded-xl bg-black/30 border border-white/10 text-white text-xs font-mono placeholder-neutral-500 focus:border-[#DC2626] focus:outline-none"
-                />
-                <button
-                  type="button"
-                  onClick={handleAddManualUrl}
-                  disabled={!manualUrlInput.trim()}
-                  className="px-4 py-2.5 rounded-xl bg-[#DC2626] hover:bg-[#b91c1c] text-white text-xs font-semibold flex items-center gap-1.5 disabled:opacity-40 disabled:pointer-events-none transition-all cursor-pointer shrink-0"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Add URL</span>
-                </button>
+
+              {/* WAY 2: Select from Media Images Dropdown */}
+              <div className="p-3.5 rounded-xl bg-black/40 border border-white/10 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] uppercase tracking-wider text-white font-semibold flex items-center gap-1.5">
+                    <FolderOpen className="w-3.5 h-3.5 text-amber-400" />
+                    <span>2. Select from Media Images (Dropdown)</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={loadMediaLibrary}
+                    disabled={loadingMedia}
+                    title="Refresh Media List"
+                    className="text-[10px] text-neutral-400 hover:text-white flex items-center gap-1 transition-colors cursor-pointer"
+                  >
+                    <RefreshCw className={`w-3 h-3 ${loadingMedia ? 'animate-spin text-[#DC2626]' : ''}`} />
+                    <span>Refresh Media</span>
+                  </button>
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                  <div className="flex-1 min-w-0">
+                    <select
+                      value={selectedMediaUrl}
+                      onChange={(e) => setSelectedMediaUrl(e.target.value)}
+                      className="w-full px-3 py-2.5 rounded-xl bg-neutral-900 border border-white/20 text-white focus:outline-none focus:border-[#DC2626] text-xs truncate"
+                    >
+                      <option value="">-- Choose an Image from Media Dropdown --</option>
+                      {mediaLibraryItems.length > 0 && (
+                        <optgroup label={`📁 Server Uploaded Media (${mediaLibraryItems.length})`}>
+                          {mediaLibraryItems.map((item, idx) => (
+                            <option key={item._id || idx} value={item.url}>
+                              {item.originalName || item.filename || item.url}
+                            </option>
+                          ))}
+                        </optgroup>
+                      )}
+                      <optgroup label="✨ Preset Category & Showroom Images">
+                        {PRESET_MEDIA_OPTIONS.map((opt, idx) => (
+                          <option key={idx} value={opt.url}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </optgroup>
+                    </select>
+                  </div>
+
+                  {selectedMediaUrl && (
+                    <div className="w-9 h-9 rounded-lg overflow-hidden border border-white/20 shrink-0 bg-black self-center">
+                      <img
+                        src={selectedMediaUrl}
+                        alt="Selected Preview"
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={handleAddFromMediaDropdown}
+                    disabled={!selectedMediaUrl}
+                    className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0 cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add to Gallery</span>
+                  </button>
+                </div>
               </div>
+
+              {/* WAY 3: Paste Direct URL */}
+              <div className="p-3.5 rounded-xl bg-black/40 border border-white/10 space-y-2">
+                <span className="text-[11px] uppercase tracking-wider text-white font-semibold flex items-center gap-1.5">
+                  <LinkIcon className="w-3.5 h-3.5 text-blue-400" />
+                  <span>3. Add by Image URL(s)</span>
+                </span>
+                <div className="flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <LinkIcon className="w-3.5 h-3.5 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={manualUrlInput}
+                      onChange={(e) => setManualUrlInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddManualUrl();
+                        }
+                      }}
+                      placeholder="Paste URL(s): e.g. https://i.postimg.cc/... or /categories/wall.jpg"
+                      className="w-full pl-9 pr-3.5 py-2.5 rounded-xl bg-neutral-900 border border-white/20 text-white placeholder-neutral-500 focus:outline-none focus:border-[#DC2626] text-xs font-mono"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAddManualUrl}
+                    className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-xs flex items-center gap-1.5 transition-colors shrink-0 cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add Photo</span>
+                  </button>
+                </div>
+                <p className="text-[10px] text-neutral-400">
+                  💡 Tip: Direct links from <a href="https://postimages.org" target="_blank" rel="noreferrer" className="text-[#DC2626] hover:underline font-semibold">Postimages.org</a>, ImgBB, or Cloudinary save 0 MB server storage.
+                </p>
+              </div>
+
+              {/* Drag & Drop Zone */}
+              <div>
+                <details className="text-xs text-neutral-400 group">
+                  <summary className="cursor-pointer hover:text-white transition-colors text-[11px] font-medium flex items-center gap-1">
+                    <span>Or drag & drop photo files</span>
+                    <span className="text-[10px] text-neutral-500">(bulk drag and drop box)</span>
+                  </summary>
+                  <div className="mt-2.5">
+                    <ImageUploader
+                      multiple={true}
+                      label="Drag & Drop image file(s) here"
+                      onUploadSuccess={handleUploadSuccess}
+                    />
+                  </div>
+                </details>
+              </div>
+
             </div>
 
             {/* Gallery Grid (Live Previews, Set Cover, Delete) */}
