@@ -904,7 +904,7 @@ export const ProductDetail = () => {
         )}
       </AnimatePresence>
 
-      {/* ── Mobile Sticky Bottom Action Bar (Instant Inquiry & WhatsApp) ── */}
+      {/* ── Mobile Sticky Bottom Action Bar (Instant Inquiry) ── */}
       <div className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-neutral-200/90 px-4 py-3 shadow-[0_-8px_25px_rgba(0,0,0,0.1)] flex items-center justify-between gap-3">
         <div className="min-w-0">
           <div className="text-[10px] text-neutral-500 font-semibold truncate tracking-wider uppercase">

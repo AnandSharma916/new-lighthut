@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Send, CheckCircle, Loader2, Phone, Mail, Building } from 'lucide-react';
+import { X, Send, CheckCircle, Loader2, Mail, Building } from 'lucide-react';
 import { inquiryService } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 
