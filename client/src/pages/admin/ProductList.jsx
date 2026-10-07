@@ -12,6 +12,9 @@ import {
   Image as ImageIcon,
   ExternalLink,
   Link as LinkIcon,
+  Sparkles,
+  Star,
+  SlidersHorizontal,
 } from 'lucide-react';
 import { productService, categoryService } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
@@ -37,10 +40,12 @@ export const ProductList = () => {
   const [productToDelete, setProductToDelete] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
 
-  // Simple Add / Edit Modal (Category, Subcategory, Heading Name, Description, Price, Photo)
+  // Add / Edit Modal with Specifications & Multi-Image Gallery
   const [modalOpen, setModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [savingProduct, setSavingProduct] = useState(false);
+  const [manualImageUrl, setManualImageUrl] = useState('');
+
   const [form, setForm] = useState({
     name: '',
     category: '',
@@ -48,7 +53,18 @@ export const ProductList = () => {
     subcategoryName: '',
     description: '',
     price: '',
-    photo: '/categories/chandelier.jpg',
+    images: [], // array of { url, isCover, alt }
+    specifications: {
+      dimensions: '',
+      wattage: '',
+      colorTemperature: '',
+      finish: '',
+      material: '',
+      voltage: '',
+      ipRating: '',
+      installationType: '',
+    },
+    customSpecs: [], // array of { key: '', value: '' }
   });
 
   // Load Categories for background assignment & dropdown options
@@ -112,20 +128,85 @@ export const ProductList = () => {
       subcategoryName: '',
       description: '',
       price: '',
-      photo: '/categories/chandelier.jpg',
+      images: [],
+      specifications: {
+        dimensions: '',
+        wattage: '',
+        colorTemperature: '',
+        finish: '',
+        material: '',
+        voltage: '',
+        ipRating: '',
+        installationType: '',
+      },
+      customSpecs: [],
     });
+    setManualImageUrl('');
     setModalOpen(true);
   };
 
   // Open Modal to Edit Product
   const handleOpenEdit = (prod) => {
     setEditingProduct(prod);
-    const cover =
-      prod.mainImage ||
-      prod.images?.find((img) => img.isCover)?.url ||
-      prod.images?.[0]?.url ||
-      (typeof prod.images?.[0] === 'string' ? prod.images[0] : '') ||
-      '/categories/chandelier.jpg';
+
+    // Collect all product images into structured gallery items
+    const productImages = [];
+    if (Array.isArray(prod.images) && prod.images.length > 0) {
+      prod.images.forEach((img, idx) => {
+        const url = typeof img === 'string' ? img : img.url;
+        if (url) {
+          productImages.push({
+            url,
+            isCover: typeof img === 'object' ? Boolean(img.isCover) : idx === 0,
+            alt: typeof img === 'object' ? (img.alt || prod.name) : prod.name,
+          });
+        }
+      });
+    } else if (prod.mainImage) {
+      productImages.push({
+        url: prod.mainImage,
+        isCover: true,
+        alt: prod.name || 'Cover Photo',
+      });
+    }
+
+    if (productImages.length > 0 && !productImages.some((img) => img.isCover)) {
+      productImages[0].isCover = true;
+    }
+
+    // Standard specs keys
+    const knownKeys = [
+      'dimensions',
+      'wattage',
+      'colorTemperature',
+      'finish',
+      'material',
+      'voltage',
+      'ipRating',
+      'installationType',
+    ];
+
+    const specs = prod.specifications || {};
+    const standardSpecs = {
+      dimensions: specs.dimensions || prod.dimensions || prod.size || '',
+      wattage: specs.wattage || '',
+      colorTemperature: specs.colorTemperature || '',
+      finish: specs.finish || '',
+      material: specs.material || '',
+      voltage: specs.voltage || '',
+      ipRating: specs.ipRating || '',
+      installationType: specs.installationType || '',
+    };
+
+    // Extract any extra custom specifications
+    const customSpecs = [];
+    if (specs && typeof specs === 'object') {
+      Object.entries(specs).forEach(([k, v]) => {
+        if (!knownKeys.includes(k) && v && typeof v === 'string') {
+          customSpecs.push({ key: k, value: v });
+        }
+      });
+    }
 
     setForm({
       name: prod.name || prod.title || '',
@@ -134,12 +215,112 @@ export const ProductList = () => {
       subcategoryName: prod.subcategoryName || '',
       description: prod.description || prod.shortDescription || '',
       price: prod.price !== undefined && prod.price !== null ? prod.price : '',
-      photo: cover,
+      images: productImages,
+      specifications: standardSpecs,
+      customSpecs,
     });
+    setManualImageUrl('');
     setModalOpen(true);
   };
 
-  // Save Product (Category, Subcategory, Name, Description, Price, Photo)
+  // Multiple Image Helpers
+  const handleAddImageUrl = () => {
+    if (!manualImageUrl.trim()) return;
+    const urls = manualImageUrl
+      .split(/[\n,]+/)
+      .map((u) => u.trim())
+      .filter((u) => u.length > 0);
+
+    if (urls.length === 0) return;
+
+    setForm((prev) => {
+      const current = [...(prev.images || [])];
+      urls.forEach((url) => {
+        if (!current.some((img) => img.url === url)) {
+          current.push({
+            url,
+            isCover: current.length === 0,
+            alt: prev.name.trim() || 'Product Photo',
+          });
+        }
+      });
+      return { ...prev, images: current };
+    });
+    setManualImageUrl('');
+    addToast(`${urls.length} photo(s) added!`, 'info');
+  };
+
+  const handleUploadImagesSuccess = (uploaded) => {
+    const urls = Array.isArray(uploaded) ? uploaded : [uploaded];
+    setForm((prev) => {
+      const current = [...(prev.images || [])];
+      urls.forEach((url) => {
+        if (url && !current.some((img) => img.url === url)) {
+          current.push({
+            url,
+            isCover: current.length === 0,
+            alt: prev.name.trim() || 'Product Photo',
+          });
+        }
+      });
+      return { ...prev, images: current };
+    });
+  };
+
+  const handleSetCoverImage = (index) => {
+    setForm((prev) => ({
+      ...prev,
+      images: (prev.images || []).map((img, idx) => ({
+        ...img,
+        isCover: idx === index,
+      })),
+    }));
+  };
+
+  const handleRemoveImage = (index) => {
+    setForm((prev) => {
+      const remaining = (prev.images || []).filter((_, idx) => idx !== index);
+      if (remaining.length > 0 && !remaining.some((img) => img.isCover)) {
+        remaining[0].isCover = true;
+      }
+      return { ...prev, images: remaining };
+    });
+  };
+
+  // Specifications Helpers
+  const handleSpecChange = (field, value) => {
+    setForm((prev) => ({
+      ...prev,
+      specifications: {
+        ...prev.specifications,
+        [field]: value,
+      },
+    }));
+  };
+
+  const handleAddCustomSpec = () => {
+    setForm((prev) => ({
+      ...prev,
+      customSpecs: [...(prev.customSpecs || []), { key: '', value: '' }],
+    }));
+  };
+
+  const handleCustomSpecChange = (index, field, value) => {
+    setForm((prev) => {
+      const updated = [...(prev.customSpecs || [])];
+      updated[index] = { ...updated[index], [field]: value };
+      return { ...prev, customSpecs: updated };
+    });
+  };
+
+  const handleRemoveCustomSpec = (index) => {
+    setForm((prev) => ({
+      ...prev,
+      customSpecs: (prev.customSpecs || []).filter((_, i) => i !== index),
+    }));
+  };
+
+  // Save Product (Category, Subcategory, Name, Description, Price, Multi-Photos, Specifications)
   const handleSave = async (e) => {
     e.preventDefault();
 
@@ -152,7 +333,35 @@ export const ProductList = () => {
       setSavingProduct(true);
 
       const chosenCatId = form.category || categories[0]?._id;
-      const photoUrl = form.photo.trim() || '/categories/chandelier.jpg';
+
+      // Handle images: ensure valid array and valid cover image
+      const validImages = (form.images || []).filter((img) => img.url && img.url.trim());
+      if (validImages.length > 0 && !validImages.some((img) => img.isCover)) {
+        validImages[0].isCover = true;
+      }
+
+      const coverImg =
+        validImages.find((img) => img.isCover)?.url ||
+        validImages[0]?.url ||
+        '/categories/chandelier.jpg';
+
+      // Compile specifications
+      const compiledSpecs = {
+        dimensions: form.specifications.dimensions?.trim() || '',
+        wattage: form.specifications.wattage?.trim() || '',
+        colorTemperature: form.specifications.colorTemperature?.trim() || '',
+        finish: form.specifications.finish?.trim() || '',
+        material: form.specifications.material?.trim() || '',
+        voltage: form.specifications.voltage?.trim() || '',
+        ipRating: form.specifications.ipRating?.trim() || '',
+        installationType: form.specifications.installationType?.trim() || '',
+      };
+
+      (form.customSpecs || []).forEach((cs) => {
+        if (cs.key && cs.key.trim() && cs.value && cs.value.trim()) {
+          compiledSpecs[cs.key.trim()] = cs.value.trim();
+        }
+      });
 
       const payload = {
         name: form.name.trim(),
@@ -163,33 +372,16 @@ export const ProductList = () => {
         description: form.description.trim(),
         shortDescription: form.description.trim().slice(0, 160),
         price: form.price !== '' ? Number(form.price) : 0,
-        mainImage: photoUrl,
-        images: editingProduct?.images?.length > 1
-          ? (editingProduct.images.some((img) => (typeof img === 'string' ? img : img.url) === photoUrl)
-              ? editingProduct.images.map((img) => {
-                  const url = typeof img === 'string' ? img : img.url;
-                  return {
-                    url,
-                    isCover: url === photoUrl,
-                    alt: typeof img === 'object' ? img.alt || form.name.trim() : form.name.trim(),
-                  };
-                })
-              : [
-                  { url: photoUrl, isCover: true, alt: form.name.trim() },
-                  ...editingProduct.images.map((img) => ({
-                    url: typeof img === 'string' ? img : img.url,
-                    isCover: false,
-                    alt: typeof img === 'object' ? img.alt || form.name.trim() : form.name.trim(),
-                  })),
-                ])
-          : [{ url: photoUrl, isCover: true, alt: form.name.trim() }],
+        mainImage: coverImg,
+        images: validImages.length > 0 ? validImages : [{ url: coverImg, isCover: true, alt: form.name.trim() }],
+        specifications: compiledSpecs,
         isPublished: true,
       };
 
       if (editingProduct) {
         const res = await productService.updateProduct(editingProduct._id, payload);
         if (res.success) {
-          addToast('Product updated successfully!', 'success');
+          addToast('Product updated successfully with specifications and gallery!', 'success');
         }
       } else {
         const res = await productService.createProduct(payload);
@@ -469,222 +661,487 @@ export const ProductList = () => {
         )}
       </div>
 
-      {/* ── SIMPLE MODAL: ONLY 4 FIELDS (Heading Name, Description, Price, Photo) ── */}
+      {/* ── EXPANDED MODAL: SCROLLABLE, SPECIFICATIONS COLUMNS & MULTI-IMAGE GALLERY ── */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
-          <div className="bg-[#14171d] border border-white/15 rounded-2xl w-full max-w-lg p-6 sm:p-8 shadow-2xl space-y-6 my-8 animate-in fade-in zoom-in-95 duration-200">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-md">
+          <div className="bg-[#14171d] border border-white/15 rounded-2xl w-full max-w-3xl lg:max-w-4xl max-h-[92vh] shadow-2xl flex flex-col overflow-hidden my-auto animate-in fade-in zoom-in-95 duration-200">
+            {/* Modal Header (Fixed / Sticky) */}
+            <div className="flex items-center justify-between border-b border-white/10 px-6 py-4 bg-[#14171d] shrink-0">
               <div>
+                <span className="text-[10px] uppercase tracking-luxury text-[#DC2626] font-semibold block mb-0.5">
+                  Luminaire Catalog Editor
+                </span>
                 <h3 className="text-lg font-serif-luxury font-bold text-white tracking-wide">
-                  {editingProduct ? 'Edit Product' : 'Add New Product'}
+                  {editingProduct ? 'Edit Product & Specifications' : 'Add New Product to Catalog'}
                 </h3>
                 <p className="text-xs text-neutral-400 mt-0.5">
-                  Enter heading name, description, price, and product photo.
+                  Configure primary identity, architectural parameters & specifications, and multi-image gallery.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setModalOpen(false)}
-                className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-neutral-400 hover:text-white"
+                className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-neutral-400 hover:text-white transition-colors"
+                title="Close modal"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Modal Form */}
-            <form onSubmit={handleSave} className="space-y-4">
-              {/* 1. Heading Name */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold uppercase tracking-wider text-neutral-300 block">
-                  Product Heading Name <span className="text-[#DC2626]">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  placeholder="e.g. Royal Waterfall Crystal Chandelier"
-                  className="w-full px-4 py-2.5 rounded-xl bg-black/40 border border-white/15 text-white placeholder-neutral-500 focus:outline-none focus:border-[#DC2626] text-sm font-medium"
-                />
-              </div>
+            <form onSubmit={handleSave} className="flex flex-col flex-1 overflow-hidden">
+              {/* Scrollable Content Area */}
+              <div className="overflow-y-auto px-6 py-5 space-y-6 flex-1 divide-y divide-white/5">
+                {/* ── SECTION 1: PRIMARY IDENTITY & CATEGORIZATION ── */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-neutral-300">
+                    <Package className="w-4 h-4 text-[#DC2626]" />
+                    <span>Basic Product Identity</span>
+                  </div>
 
-              {/* 2. Category & Subcategory Selection with Options (Rename, Update, Delete, +New) */}
-              <CategorySelectorWithOptions
-                categories={categories}
-                selectedCategoryId={form.category}
-                onSelectCategory={(catId) => {
-                  setForm((prev) => ({
-                    ...prev,
-                    category: catId,
-                    subcategory: '',
-                    subcategoryName: '',
-                  }));
-                }}
-                selectedSubcategory={form.subcategory}
-                onSelectSubcategory={(subSlug, subName) => {
-                  setForm((prev) => ({
-                    ...prev,
-                    subcategory: subSlug,
-                    subcategoryName: subName,
-                  }));
-                }}
-                onCategoriesChanged={async () => {
-                  try {
-                    const res = await categoryService.getCategories({ admin: 'true' });
-                    if (res.success && res.categories) {
-                      setCategories(res.categories);
-                      return res.categories;
-                    }
-                  } catch (err) {
-                    console.error(err);
-                  }
-                  return [];
-                }}
-              />
-
-              {/* 2. Product Price (₹) */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold uppercase tracking-wider text-neutral-300 block">
-                  Product Price (₹)
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 font-bold text-sm">
-                    ₹
-                  </span>
-                  <input
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={form.price}
-                    onChange={(e) => setForm({ ...form, price: e.target.value })}
-                    placeholder="e.g. 14999"
-                    className="w-full pl-8 pr-4 py-2.5 rounded-xl bg-black/40 border border-white/15 text-white placeholder-neutral-500 focus:outline-none focus:border-[#DC2626] text-sm font-medium"
-                  />
-                </div>
-              </div>
-
-              {/* 3. Product Description */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold uppercase tracking-wider text-neutral-300 block">
-                  Product Description
-                </label>
-                <textarea
-                  rows={3}
-                  value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  placeholder="e.g. Elegant handcrafted crystal fixture with golden canopy. Ideal for dining and living spaces."
-                  className="w-full px-4 py-2.5 rounded-xl bg-black/40 border border-white/15 text-white placeholder-neutral-500 focus:outline-none focus:border-[#DC2626] text-xs leading-relaxed resize-y"
-                />
-              </div>
-
-              {/* 4. Product Photo */}
-              <div className="space-y-3 pt-2 border-t border-white/10">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-semibold uppercase tracking-wider text-neutral-300 flex items-center gap-1.5">
-                    <ImageIcon className="w-3.5 h-3.5 text-[#DC2626]" />
-                    <span>Product Photo</span>
-                  </label>
-                  <span className="text-[10px] text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                    Direct Link Mode (0 MB Server Space)
-                  </span>
-                </div>
-
-                {/* Primary: Direct Image URL Input */}
-                <div className="space-y-1.5">
-                  <div className="relative">
-                    <LinkIcon className="w-4 h-4 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  {/* 1. Heading Name */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold uppercase tracking-wider text-neutral-300 block">
+                      Product Heading Name <span className="text-[#DC2626]">*</span>
+                    </label>
                     <input
                       type="text"
-                      value={form.photo}
-                      onChange={(e) => setForm({ ...form, photo: e.target.value })}
-                      placeholder="Paste Image URL: e.g. https://i.postimg.cc/... or /categories/chandelier.jpg"
-                      className="w-full pl-9 pr-3.5 py-2.5 rounded-xl bg-black/40 border border-white/20 text-white placeholder-neutral-500 focus:outline-none focus:border-[#DC2626] text-xs font-mono"
+                      required
+                      value={form.name}
+                      onChange={(e) => setForm({ ...form, name: e.target.value })}
+                      placeholder="e.g. Royal Waterfall Crystal Chandelier"
+                      className="w-full px-4 py-2.5 rounded-xl bg-black/40 border border-white/15 text-white placeholder-neutral-500 focus:outline-none focus:border-[#DC2626] text-sm font-medium"
                     />
                   </div>
-                  <p className="text-[11px] text-neutral-400">
-                    💡 Tip: Paste direct image link from <a href="https://postimages.org" target="_blank" rel="noreferrer" className="text-[#DC2626] hover:underline font-semibold">Postimages.org</a>, ImgBB, or any web URL without taking server storage.
-                  </p>
-                </div>
 
-                {/* Secondary: PC File Uploader */}
-                <div className="pt-1">
-                  <details className="text-xs text-neutral-400 group">
-                    <summary className="cursor-pointer hover:text-white transition-colors text-[11px] font-medium flex items-center gap-1">
-                      <span>Or upload photo file from computer</span>
-                      <span className="text-[10px] text-neutral-500">(saves to /uploads)</span>
-                    </summary>
-                    <div className="mt-2">
-                      <ImageUploader
-                        label="Choose image file from PC"
-                        onUploadSuccess={(url) => setForm({ ...form, photo: url })}
-                      />
-                    </div>
-                  </details>
-                </div>
+                  {/* 2. Category & Subcategory Selection */}
+                  <CategorySelectorWithOptions
+                    categories={categories}
+                    selectedCategoryId={form.category}
+                    onSelectCategory={(catId) => {
+                      setForm((prev) => ({
+                        ...prev,
+                        category: catId,
+                        subcategory: '',
+                        subcategoryName: '',
+                      }));
+                    }}
+                    selectedSubcategory={form.subcategory}
+                    onSelectSubcategory={(subSlug, subName) => {
+                      setForm((prev) => ({
+                        ...prev,
+                        subcategory: subSlug,
+                        subcategoryName: subName,
+                      }));
+                    }}
+                    onCategoriesChanged={async () => {
+                      try {
+                        const res = await categoryService.getCategories({ admin: 'true' });
+                        if (res.success && res.categories) {
+                          setCategories(res.categories);
+                          return res.categories;
+                        }
+                      } catch (err) {
+                        console.error(err);
+                      }
+                      return [];
+                    }}
+                  />
 
-                {/* Live Preview */}
-                {form.photo && (
-                  <div className="p-3 rounded-xl bg-black/40 border border-white/10 flex items-center justify-between gap-3 mt-2">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-14 h-14 rounded-lg bg-black border border-white/20 overflow-hidden shrink-0">
-                        <img
-                          src={form.photo}
-                          onError={(e) => {
-                            e.currentTarget.onerror = null;
-                            e.currentTarget.src = '/categories/chandelier.jpg';
-                          }}
-                          alt="Preview"
-                          className="w-full h-full object-cover"
+                  {/* 3. Product Price & Description Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    {/* Price Input */}
+                    <div className="space-y-1.5 sm:col-span-1">
+                      <label className="text-xs font-semibold uppercase tracking-wider text-neutral-300 block">
+                        Price (₹)
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 font-bold text-sm">
+                          ₹
+                        </span>
+                        <input
+                          type="number"
+                          min="0"
+                          step="1"
+                          value={form.price}
+                          onChange={(e) => setForm({ ...form, price: e.target.value })}
+                          placeholder="e.g. 14999"
+                          className="w-full pl-8 pr-4 py-2.5 rounded-xl bg-black/40 border border-white/15 text-white placeholder-neutral-500 focus:outline-none focus:border-[#DC2626] text-sm font-medium"
                         />
                       </div>
-                      <div className="min-w-0">
-                        <span className="text-xs text-emerald-400 font-semibold flex items-center gap-1">
-                          ✓ Photo Ready
+                      <p className="text-[11px] text-neutral-400">MRP in Indian Rupees.</p>
+                    </div>
+
+                    {/* Product Description */}
+                    <div className="space-y-1.5 sm:col-span-2">
+                      <label className="text-xs font-semibold uppercase tracking-wider text-neutral-300 block">
+                        Product Architectural Description
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={form.description}
+                        onChange={(e) => setForm({ ...form, description: e.target.value })}
+                        placeholder="e.g. Elegant handcrafted crystal fixture with golden canopy. Ideal for dining and living spaces."
+                        className="w-full px-4 py-2.5 rounded-xl bg-black/40 border border-white/15 text-white placeholder-neutral-500 focus:outline-none focus:border-[#DC2626] text-xs leading-relaxed resize-y"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* ── SECTION 2: TECHNICAL SPECIFICATIONS (COLUMNS + DYNAMIC) ── */}
+                <div className="pt-5 space-y-4">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-neutral-300">
+                      <Sparkles className="w-4 h-4 text-[#DC2626]" />
+                      <span>Product Technical Specifications</span>
+                    </div>
+                    <span className="text-[10px] text-neutral-400">
+                      Displayed in architectural specs table on product page
+                    </span>
+                  </div>
+
+                  {/* Standard Specification Columns (4-column on desktop) */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                    {/* 1. Dimensions / Size */}
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-medium text-neutral-400 uppercase tracking-wider block">
+                        Dimensions / Size
+                      </label>
+                      <input
+                        type="text"
+                        value={form.specifications.dimensions}
+                        onChange={(e) => handleSpecChange('dimensions', e.target.value)}
+                        placeholder="e.g. Dia: 600mm, H: 800mm"
+                        className="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/15 text-white placeholder-neutral-500 focus:outline-none focus:border-[#DC2626] text-xs"
+                      />
+                    </div>
+
+                    {/* 2. Wattage */}
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-medium text-neutral-400 uppercase tracking-wider block">
+                        Wattage / Power
+                      </label>
+                      <input
+                        type="text"
+                        value={form.specifications.wattage}
+                        onChange={(e) => handleSpecChange('wattage', e.target.value)}
+                        placeholder="e.g. 48W LED / E27 Socket"
+                        className="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/15 text-white placeholder-neutral-500 focus:outline-none focus:border-[#DC2626] text-xs"
+                      />
+                    </div>
+
+                    {/* 3. Color Temperature */}
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-medium text-neutral-400 uppercase tracking-wider block">
+                        Color Temp (CCT)
+                      </label>
+                      <input
+                        type="text"
+                        value={form.specifications.colorTemperature}
+                        onChange={(e) => handleSpecChange('colorTemperature', e.target.value)}
+                        placeholder="e.g. 3000K Warm / 3-in-1 CCT"
+                        className="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/15 text-white placeholder-neutral-500 focus:outline-none focus:border-[#DC2626] text-xs"
+                      />
+                    </div>
+
+                    {/* 4. Finish / Color */}
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-medium text-neutral-400 uppercase tracking-wider block">
+                        Finish / Color
+                      </label>
+                      <input
+                        type="text"
+                        value={form.specifications.finish}
+                        onChange={(e) => handleSpecChange('finish', e.target.value)}
+                        placeholder="e.g. Brushed Brass / Matte Black"
+                        className="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/15 text-white placeholder-neutral-500 focus:outline-none focus:border-[#DC2626] text-xs"
+                      />
+                    </div>
+
+                    {/* 5. Material */}
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-medium text-neutral-400 uppercase tracking-wider block">
+                        Primary Material
+                      </label>
+                      <input
+                        type="text"
+                        value={form.specifications.material}
+                        onChange={(e) => handleSpecChange('material', e.target.value)}
+                        placeholder="e.g. Die-cast Aluminum & K9 Crystal"
+                        className="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/15 text-white placeholder-neutral-500 focus:outline-none focus:border-[#DC2626] text-xs"
+                      />
+                    </div>
+
+                    {/* 6. Voltage */}
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-medium text-neutral-400 uppercase tracking-wider block">
+                        Input Voltage
+                      </label>
+                      <input
+                        type="text"
+                        value={form.specifications.voltage}
+                        onChange={(e) => handleSpecChange('voltage', e.target.value)}
+                        placeholder="e.g. AC 220-240V, 50Hz"
+                        className="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/15 text-white placeholder-neutral-500 focus:outline-none focus:border-[#DC2626] text-xs"
+                      />
+                    </div>
+
+                    {/* 7. IP Rating */}
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-medium text-neutral-400 uppercase tracking-wider block">
+                        IP Rating
+                      </label>
+                      <input
+                        type="text"
+                        value={form.specifications.ipRating}
+                        onChange={(e) => handleSpecChange('ipRating', e.target.value)}
+                        placeholder="e.g. IP20 (Indoor) / IP65"
+                        className="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/15 text-white placeholder-neutral-500 focus:outline-none focus:border-[#DC2626] text-xs"
+                      />
+                    </div>
+
+                    {/* 8. Installation Type */}
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-medium text-neutral-400 uppercase tracking-wider block">
+                        Installation Type
+                      </label>
+                      <input
+                        type="text"
+                        value={form.specifications.installationType}
+                        onChange={(e) => handleSpecChange('installationType', e.target.value)}
+                        placeholder="e.g. Ceiling Pendant / Surface"
+                        className="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/15 text-white placeholder-neutral-500 focus:outline-none focus:border-[#DC2626] text-xs"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Dynamic Custom Specifications List */}
+                  <div className="pt-2 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] text-neutral-400 font-medium">
+                        Custom Parameters / Extra Specifications ({form.customSpecs.length}):
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleAddCustomSpec}
+                        className="text-[11px] text-amber-400 hover:text-amber-300 font-semibold flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 transition-all"
+                      >
+                        <Plus className="w-3 h-3" />
+                        <span>Add Custom Spec</span>
+                      </button>
+                    </div>
+
+                    {form.customSpecs.length > 0 && (
+                      <div className="space-y-2">
+                        {form.customSpecs.map((spec, idx) => (
+                          <div key={idx} className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              value={spec.key}
+                              onChange={(e) => handleCustomSpecChange(idx, 'key', e.target.value)}
+                              placeholder="Spec Label (e.g. Beam Angle, CRI)"
+                              className="w-1/2 px-3 py-1.5 rounded-lg bg-black/40 border border-white/15 text-white placeholder-neutral-500 focus:outline-none focus:border-[#DC2626] text-xs"
+                            />
+                            <input
+                              type="text"
+                              value={spec.value}
+                              onChange={(e) => handleCustomSpecChange(idx, 'value', e.target.value)}
+                              placeholder="Spec Value (e.g. 120°, Ra > 90)"
+                              className="w-1/2 px-3 py-1.5 rounded-lg bg-black/40 border border-white/15 text-white placeholder-neutral-500 focus:outline-none focus:border-[#DC2626] text-xs"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveCustomSpec(idx)}
+                              className="p-1.5 rounded-lg text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors shrink-0"
+                              title="Remove specification"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* ── SECTION 3: PRODUCT PHOTOS & MULTI-IMAGE GALLERY ── */}
+                <div className="pt-5 space-y-4">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-neutral-300">
+                      <ImageIcon className="w-4 h-4 text-[#DC2626]" />
+                      <span>Product Photos & Multi-Image Gallery</span>
+                    </div>
+                    <span className="text-[10px] text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                      {form.images?.length || 0} Photo(s) Attached
+                    </span>
+                  </div>
+
+                  {/* Mode 1: Paste Direct URL */}
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-medium text-neutral-400 uppercase tracking-wider block">
+                      Add by Image URL (Single or Comma-Separated Links)
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <div className="relative flex-1">
+                        <LinkIcon className="w-4 h-4 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          value={manualImageUrl}
+                          onChange={(e) => setManualImageUrl(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleAddImageUrl();
+                            }
+                          }}
+                          placeholder="Paste URL(s): e.g. https://i.postimg.cc/... or /categories/wall.jpg"
+                          className="w-full pl-9 pr-3.5 py-2.5 rounded-xl bg-black/40 border border-white/20 text-white placeholder-neutral-500 focus:outline-none focus:border-[#DC2626] text-xs font-mono"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleAddImageUrl}
+                        className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-xs flex items-center gap-1.5 transition-colors shrink-0"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Add Photo</span>
+                      </button>
+                    </div>
+                    <p className="text-[11px] text-neutral-400">
+                      💡 Tip: Direct links from <a href="https://postimages.org" target="_blank" rel="noreferrer" className="text-[#DC2626] hover:underline font-semibold">Postimages.org</a>, ImgBB, or Cloudinary save 0 MB server storage.
+                    </p>
+                  </div>
+
+                  {/* Mode 2: Multi-file computer upload */}
+                  <div className="pt-1">
+                    <details className="text-xs text-neutral-400 group">
+                      <summary className="cursor-pointer hover:text-white transition-colors text-[11px] font-medium flex items-center gap-1">
+                        <span>Or upload photo file(s) from computer</span>
+                        <span className="text-[10px] text-neutral-500">(select multiple photos at once)</span>
+                      </summary>
+                      <div className="mt-2.5">
+                        <ImageUploader
+                          multiple={true}
+                          label="Choose image file(s) from PC (Bulk upload enabled)"
+                          onUploadSuccess={handleUploadImagesSuccess}
+                        />
+                      </div>
+                    </details>
+                  </div>
+
+                  {/* Visual Gallery Grid Preview */}
+                  <div className="pt-2">
+                    <div className="text-[11px] uppercase tracking-wider text-neutral-400 font-semibold mb-2 flex items-center justify-between">
+                      <span>Photo Gallery ({form.images?.length || 0}):</span>
+                      {form.images?.length > 1 && (
+                        <span className="text-[10px] text-neutral-400 font-normal">
+                          Click "Cover" on any photo to make it the primary thumbnail
                         </span>
-                        <p className="text-[10px] text-neutral-400 truncate font-mono max-w-[200px]">
-                          {form.photo}
+                      )}
+                    </div>
+
+                    {form.images?.length === 0 ? (
+                      <div className="p-6 rounded-xl bg-black/30 border border-dashed border-white/10 text-center text-xs text-neutral-400">
+                        <ImageIcon className="w-8 h-8 text-neutral-400 mx-auto mb-2 opacity-50" />
+                        <p>No photos attached yet.</p>
+                        <p className="text-[10px] text-neutral-400 mt-0.5">
+                          Paste image URLs above or upload from your computer.
                         </p>
                       </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setForm({ ...form, photo: '' })}
-                      className="text-xs text-red-400 hover:text-red-300 px-2 py-1 rounded hover:bg-red-500/10 transition-colors"
-                    >
-                      Clear
-                    </button>
+                    ) : (
+                      <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3">
+                        {form.images.map((img, idx) => (
+                          <div
+                            key={idx}
+                            className={`relative rounded-xl overflow-hidden bg-black border transition-all group aspect-square flex flex-col justify-between ${
+                              img.isCover
+                                ? 'border-[#DC2626] ring-2 ring-[#DC2626]/30'
+                                : 'border-white/15 hover:border-white/30'
+                            }`}
+                          >
+                            <img
+                              src={img.url}
+                              alt={img.alt || `Product photo ${idx + 1}`}
+                              onError={(e) => {
+                                e.currentTarget.onerror = null;
+                                e.currentTarget.src = '/categories/chandelier.jpg';
+                              }}
+                              className="w-full h-full object-cover"
+                            />
+
+                            {/* Cover Badge */}
+                            {img.isCover && (
+                              <div className="absolute top-1.5 left-1.5 bg-[#DC2626] text-white text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded shadow">
+                                Cover Photo
+                              </div>
+                            )}
+
+                            {/* Action overlay */}
+                            <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1.5 p-2">
+                              {!img.isCover && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleSetCoverImage(idx)}
+                                  className="px-2 py-1 rounded bg-white/20 hover:bg-[#DC2626] text-white text-[10px] font-semibold transition-colors flex items-center gap-1"
+                                >
+                                  <Star className="w-3 h-3" />
+                                  <span>Make Cover</span>
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveImage(idx)}
+                                className="px-2 py-1 rounded bg-red-500/30 hover:bg-red-600 text-white text-[10px] font-semibold transition-colors flex items-center gap-1"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                                <span>Remove</span>
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
               </div>
 
-              {/* Modal Buttons */}
-              <div className="pt-4 border-t border-white/10 flex items-center justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setModalOpen(false)}
-                  disabled={savingProduct}
-                  className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-neutral-300 text-xs font-semibold uppercase tracking-wider"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={savingProduct}
-                  className="btn-gold px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 shadow-lg disabled:opacity-50 cursor-pointer"
-                >
-                  {savingProduct ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Saving...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Check className="w-4 h-4" />
-                      <span>{editingProduct ? 'Update Product' : 'Save Product'}</span>
-                    </>
-                  )}
-                </button>
+              {/* Modal Footer (Fixed / Sticky) */}
+              <div className="px-6 py-3.5 border-t border-white/10 bg-[#0e1014] flex items-center justify-between shrink-0">
+                <div className="text-[11px] text-neutral-400">
+                  <span className="font-semibold text-white">{form.images?.length || 0}</span> photos •{' '}
+                  <span className="font-semibold text-white">
+                    {Object.values(form.specifications).filter(Boolean).length + form.customSpecs.filter((s) => s.key && s.value).length}
+                  </span>{' '}
+                  specifications
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setModalOpen(false)}
+                    disabled={savingProduct}
+                    className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-neutral-300 text-xs font-semibold uppercase tracking-wider transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={savingProduct}
+                    className="btn-gold px-6 py-2 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 shadow-lg disabled:opacity-50 cursor-pointer"
+                  >
+                    {savingProduct ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Saving...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Check className="w-4 h-4" />
+                        <span>{editingProduct ? 'Update Product' : 'Save Product'}</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </form>
           </div>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { MapPin, Phone, Mail, MessageSquare, Send, Clock, Loader2, Sparkles } from 'lucide-react';
+import { MapPin, Mail, MessageSquare, Send, Clock, Loader2, Sparkles } from 'lucide-react';
 import { useSettings } from '../../context/SettingsContext';
 import { inquiryService } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
@@ -99,18 +99,6 @@ export const ContactSection = ({ section }) => {
                   </a>
                 </div>
               </div>
-
-              {settings.phone && (
-                <div className="flex items-start gap-3.5 text-xs text-neutral-600">
-                  <Phone className="w-4 h-4 text-[#DC2626] shrink-0 mt-0.5" />
-                  <div>
-                    <span className="text-neutral-900 font-semibold block mb-0.5">Phone & Call</span>
-                    <a href={`tel:${settings.phone.replace(/[^\d+]/g, '')}`} className="hover:text-neutral-900 transition-colors">
-                      {settings.phone}
-                    </a>
-                  </div>
-                </div>
-              )}
 
               {settings.email && (
                 <div className="flex items-start gap-3.5 text-xs text-neutral-600">

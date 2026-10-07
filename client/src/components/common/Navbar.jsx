@@ -7,7 +7,6 @@ import {
   X,
   ChevronDown,
   ChevronRight,
-  Phone,
   Mail,
   ArrowRight,
   Send,
@@ -484,26 +483,15 @@ export const Navbar = () => {
                 </div>
               </div>
 
-              {/* Drawer footer with Inquiry & WhatsApp Actions */}
+              {/* Drawer footer with Inquiry Action */}
               <div className="px-4 pb-6 pt-3 border-t border-neutral-200 space-y-2.5 shrink-0 bg-white">
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={() => { closeMobile(); setInquiryOpen(true); }}
-                    className="btn-gold py-2.5 px-3 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-sm active:scale-95"
-                  >
-                    <Send className="w-3.5 h-3.5" />
-                    <span>Inquiry</span>
-                  </button>
-                  <a
-                    href="https://wa.me/919811869622?text=Hello%20Light-Hut%2C%20I%20am%20interested%20in%20your%20architectural%20lighting%20fixtures."
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-sm transition-colors active:scale-95"
-                  >
-                    <Phone className="w-3.5 h-3.5" />
-                    <span>WhatsApp</span>
-                  </a>
-                </div>
+                <button
+                  onClick={() => { closeMobile(); setInquiryOpen(true); }}
+                  className="btn-gold w-full py-2.5 px-3 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-sm active:scale-95"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>Send Inquiry</span>
+                </button>
                 <a
                   href="mailto:lighthutdecorativedlh@gmail.com"
                   className="flex items-center gap-2 text-xs text-neutral-600 hover:text-[#DC2626] transition-colors px-1"

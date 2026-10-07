@@ -712,7 +712,6 @@ export const Catalog = () => {
             <div class="header-info">
               <div><strong>Showroom:</strong> ${settings?.showroomAddress || '4B/27, Tilak Nagar, Lighting Market, New Delhi - 110018'}</div>
               <div><strong>Works:</strong> ${settings?.worksAddress || 'C37/4, Lawrence Road Industrial Area, New Delhi - 110035'}</div>
-              <div><strong>Direct Sales:</strong> ${settings?.phone || '+91 79866 22629 • +91 90232 06901'}</div>
               <div><strong>Catalog Date:</strong> ${new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })} • <strong>${fixtureList.length} Fixtures</strong></div>
             </div>
           </div>

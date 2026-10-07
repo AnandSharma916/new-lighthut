@@ -5,7 +5,6 @@ import {
   ArrowRight,
   Eye,
   Heart,
-  Phone,
   Share2,
   Sparkles,
   X,
@@ -147,9 +146,6 @@ export const ProductCard = ({ product, hidePricing = false }) => {
     (typeof product.category === 'string'
       ? product.category.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
       : 'Architectural Light');
-
-  const displayPhone = settings?.phone || '+91 8045811438';
-  const rawPhone = displayPhone.replace(/[^\d+]/g, '');
 
   // Numerical price computation (deterministic realistic fake price if not provided)
   const numericPrice = (() => {

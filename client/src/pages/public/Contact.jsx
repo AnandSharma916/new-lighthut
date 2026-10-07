@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   MapPin,
-  Phone,
   Mail,
   MessageSquare,
   Send,
@@ -36,8 +35,6 @@ export const Contact = () => {
   });
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-
-  const cleanPhone = (settings.phone || '+91 8045811438').replace(/[^\d+]/g, '');
 
   useEffect(() => {
     document.title = `Contact Us & Lighting Showroom | ${settings.companyName || 'Light-Hut'}`;

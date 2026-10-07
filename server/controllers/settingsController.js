@@ -96,6 +96,9 @@ export const updateSettings = async (req, res, next) => {
       Object.assign(settings, req.body);
     }
 
+    settings.phone = '';
+    settings.whatsapp = '';
+
     await settings.save();
 
     res.status(200).json({

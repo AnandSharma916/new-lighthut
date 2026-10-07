@@ -21,7 +21,6 @@ import {
   Eye,
   MapPin,
   Building2,
-  Phone,
 } from 'lucide-react';
 import { productService } from '../../services/api';
 import { ProductCard } from '../../components/catalog/ProductCard';
@@ -248,9 +247,6 @@ export const ProductDetail = () => {
 
   // 8 High-Impact In-Situ Spatial Images
   const inSituGallery = images.slice(1, 9);
-
-  const displayPhone = settings?.phone || '+91 8045811438';
-  const cleanPhone = displayPhone.replace(/[^\d+]/g, '');
 
   const numericPrice = (() => {
     if (product.price && Number(product.price) > 0) return Number(product.price);
@@ -919,22 +915,13 @@ export const ProductDetail = () => {
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <a
-            href={`https://wa.me/919811869622?text=${encodeURIComponent(`Hello Light-Hut, I am interested in: ${product.name} (SKU: ${product.sku || ''}). Please share details.`)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="p-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm flex items-center justify-center transition-colors active:scale-95"
-            title="Chat on WhatsApp"
-          >
-            <Phone className="w-4 h-4" />
-          </a>
           <button
             type="button"
             onClick={() => setInquiryOpen(true)}
             className="btn-gold py-2.5 px-4 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-md active:scale-95 cursor-pointer"
           >
             <Send className="w-3.5 h-3.5" />
-            <span>Inquiry</span>
+            <span>Send Inquiry</span>
           </button>
         </div>
       </div>

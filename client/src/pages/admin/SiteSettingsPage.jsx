@@ -4,7 +4,6 @@ import {
   Save,
   Loader2,
   Building2,
-  Phone,
   Mail,
   MapPin,
   Globe,
@@ -247,52 +246,22 @@ export const SiteSettingsPage = () => {
         {/* 2. Direct Contact Details */}
         <div className="bg-[#14171d] border border-white/10 rounded-2xl p-6 sm:p-8 space-y-5 shadow-xl">
           <h2 className="text-base font-serif-luxury font-bold text-white flex items-center gap-2">
-            <Phone className="w-4 h-4 text-[#DC2626]" />
+            <Mail className="w-4 h-4 text-[#DC2626]" />
             <span>Consultation & Contact Channels</span>
           </h2>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-xs uppercase tracking-luxury text-neutral-400 mb-1.5 font-medium">
-                Direct Telephone
-              </label>
-              <input
-                type="text"
-                name="phone"
-                value={formData.phone}
-                onChange={handleChange}
-                placeholder="+91 8045811438"
-                className="w-full px-4 py-2.5 rounded-xl bg-[#090a0d] border border-white/10 text-white text-xs font-mono"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs uppercase tracking-luxury text-neutral-400 mb-1.5 font-medium">
-                WhatsApp Business Link
-              </label>
-              <input
-                type="text"
-                name="whatsapp"
-                value={formData.whatsapp}
-                onChange={handleChange}
-                placeholder="+91 9811000000"
-                className="w-full px-4 py-2.5 rounded-xl bg-[#090a0d] border border-white/10 text-white text-xs font-mono"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs uppercase tracking-luxury text-neutral-400 mb-1.5 font-medium">
-                Sales & Inquiries Email
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="info@lightingstudio.com"
-                className="w-full px-4 py-2.5 rounded-xl bg-[#090a0d] border border-white/10 text-white text-xs"
-              />
-            </div>
+          <div>
+            <label className="block text-xs uppercase tracking-luxury text-neutral-400 mb-1.5 font-medium">
+              Sales & Inquiries Email
+            </label>
+            <input
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              placeholder="info@lightingstudio.com"
+              className="w-full px-4 py-2.5 rounded-xl bg-[#090a0d] border border-white/10 text-white text-xs"
+            />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
