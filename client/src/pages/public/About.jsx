@@ -207,12 +207,12 @@ export const About = () => {
           <div className="lg:col-span-6 relative">
             <div className="rounded-3xl overflow-hidden border border-neutral-200 shadow-xl aspect-[4/3] bg-neutral-100 group">
               <img
-                src="/craft-main.jpg"
+                src="/philosophy-grand-chandelier.jpg"
                 onError={(e) => {
                   e.currentTarget.onerror = null;
-                  e.currentTarget.src = '/categories/chandelier.jpg';
+                  e.currentTarget.src = '/craft-main.jpg';
                 }}
-                alt="Master Artisan Crafting Chandelier"
+                alt="Light-Hut Luxury Grand Chandelier Gallery"
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
               />
             </div>

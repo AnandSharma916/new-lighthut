@@ -47,10 +47,10 @@ export const AboutSection = ({ section }) => {
             {/* Main Flagship Showroom Image */}
             <div className="relative rounded-2xl overflow-hidden shadow-2xl bg-neutral-900 aspect-[4/3] sm:aspect-[14/11] border border-neutral-200 group">
               <img
-                src="/craft-main.jpg"
+                src="/philosophy-grand-chandelier.jpg"
                 onError={(e) => {
                   e.currentTarget.onerror = null;
-                  e.currentTarget.src = '/showroom-hero-hd.jpg';
+                  e.currentTarget.src = '/craft-main.jpg';
                 }}
                 alt="Light-Hut Flagship Lighting Gallery"
                 className="w-full h-full object-cover object-center transform group-hover:scale-105 transition-transform duration-1000 ease-out"
