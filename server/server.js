@@ -23,6 +23,7 @@ import uploadRoutes from './routes/uploadRoutes.js';
 import catalogRoutes from './routes/catalogRoutes.js';
 
 import Category from './models/Category.js';
+import Admin from './models/Admin.js';
 import { seedDatabase } from './scripts/seedData.js';
 import { syncCatalogProducts } from './scripts/syncCatalogProducts.js';
 import { removeE27Text } from './scripts/removeE27Text.js';
@@ -37,6 +38,18 @@ const initDB = async () => {
     if (catCount === 0) {
       console.log('[Server] Fresh database detected. Auto-seeding lighting catalog & admin...');
       await seedDatabase(false);
+    } else {
+      const adminCount = await Admin.countDocuments();
+      if (adminCount === 0) {
+        console.log('[Server] No admin user detected. Creating default admin account...');
+        await Admin.create({
+          name: process.env.ADMIN_NAME || 'LightHut Administrator',
+          email: (process.env.ADMIN_EMAIL || 'admin@lighthut.com').toLowerCase().trim(),
+          password: process.env.ADMIN_PASSWORD || 'admin123456',
+          role: 'admin',
+        });
+        console.log('[Server] Default admin account ready: admin@lighthut.com / admin123456');
+      }
     }
 
     // Auto-sync subcategories, icon, and tag into existing Category records in MongoDB

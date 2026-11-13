@@ -261,25 +261,56 @@ export const getProductById = async (req, res, next) => {
   }
 };
 
-// Helper to normalize product images into valid schema objects
-const normalizeProductImages = (images = [], mainImage = '', defaultAlt = '') => {
-  const result = [];
-  const seenUrls = new Set();
+// Helper to normalize product images into valid schema objects with deduplication
+export const normalizeProductImages = (images = [], mainImage = '', defaultAlt = '') => {
+  const cleanUrl = (u) => (typeof u === 'string' ? u.trim() : '');
 
-  // If primary image provided, ensure it comes first with isCover: true
-  if (mainImage && typeof mainImage === 'string' && mainImage.trim() !== '') {
-    const trimmedMain = mainImage.trim();
-    result.push({
-      url: trimmedMain,
+  // Normalized key for deduplication (matches relative vs absolute paths)
+  const getCanonicalKey = (url) => {
+    if (!url) return '';
+    try {
+      const parsed = new URL(url, 'http://localhost');
+      return parsed.pathname.replace(/\/+/g, '/').toLowerCase();
+    } catch {
+      return url.trim().replace(/\/+/g, '/').toLowerCase();
+    }
+  };
+
+  // Determine cover URL:
+  // Priority 1: explicitly marked cover in images array
+  // Priority 2: mainImage passed
+  // Priority 3: first valid image URL
+  let targetCoverUrl = '';
+  if (Array.isArray(images)) {
+    const explicitCover = images.find(
+      (img) => img && typeof img === 'object' && img.isCover && cleanUrl(img.url)
+    );
+    if (explicitCover) {
+      targetCoverUrl = cleanUrl(explicitCover.url);
+    }
+  }
+
+  if (!targetCoverUrl && cleanUrl(mainImage)) {
+    targetCoverUrl = cleanUrl(mainImage);
+  }
+
+  const targetCoverKey = getCanonicalKey(targetCoverUrl);
+  const seenKeys = new Set();
+  const candidates = [];
+
+  // If primary image provided, ensure it is added first
+  if (targetCoverUrl) {
+    candidates.push({
+      url: targetCoverUrl,
       alt: defaultAlt || 'Primary Luminaire',
       isCover: true,
       publicId: '',
     });
-    seenUrls.add(trimmedMain);
+    seenKeys.add(targetCoverKey);
   }
 
   if (Array.isArray(images)) {
-    images.forEach((img, idx) => {
+    images.forEach((img) => {
       if (!img) return;
       let url = '';
       let alt = defaultAlt;
@@ -287,32 +318,48 @@ const normalizeProductImages = (images = [], mainImage = '', defaultAlt = '') =>
       let publicId = '';
 
       if (typeof img === 'string') {
-        url = img.trim();
+        url = cleanUrl(img);
       } else if (typeof img === 'object') {
-        url = img.url ? String(img.url).trim() : '';
+        url = cleanUrl(img.url);
         alt = img.alt || defaultAlt;
         isCover = Boolean(img.isCover);
         publicId = img.publicId || '';
       }
 
-      if (url && !seenUrls.has(url)) {
-        seenUrls.add(url);
-        result.push({
-          url,
-          alt,
-          isCover: result.length === 0 ? true : isCover,
-          publicId,
-        });
-      }
+      if (!url) return;
+      const key = getCanonicalKey(url);
+
+      // Skip duplicate URLs
+      if (seenKeys.has(key)) return;
+      seenKeys.add(key);
+
+      candidates.push({
+        url,
+        alt,
+        isCover: targetCoverKey ? key === targetCoverKey : candidates.length === 0,
+        publicId,
+      });
     });
   }
 
-  // Ensure at least one image has isCover: true if images exist
-  if (result.length > 0 && !result.some((img) => img.isCover)) {
-    result[0].isCover = true;
+  // Ensure EXACTLY one image has isCover: true
+  let coverFound = false;
+  candidates.forEach((img) => {
+    if (img.isCover && !coverFound) {
+      coverFound = true;
+    } else {
+      img.isCover = false;
+    }
+  });
+
+  if (!coverFound && candidates.length > 0) {
+    candidates[0].isCover = true;
   }
 
-  return result;
+  // Put cover photo at index 0 so virtual mainImage and images[0] are 100% in sync
+  const coverItem = candidates.find((img) => img.isCover);
+  const otherItems = candidates.filter((img) => !img.isCover);
+  return coverItem ? [coverItem, ...otherItems] : candidates;
 };
 
 // Helper to normalize specifications

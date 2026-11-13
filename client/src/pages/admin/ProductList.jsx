@@ -167,29 +167,48 @@ export const ProductList = () => {
     setModalOpen(true);
   };
 
+  // Check if image is a default stock / category placeholder
+  const isPlaceholderPhoto = (url = '') => {
+    if (!url || typeof url !== 'string') return false;
+    const lower = url.toLowerCase().trim();
+    return (
+      lower.startsWith('/categories/') ||
+      lower.includes('placeholder') ||
+      lower === '/philosophy-grand-chandelier.jpg' ||
+      lower === '/craft-main.jpg' ||
+      lower === '/showroom-hero-hd.jpg'
+    );
+  };
+
   // Open Modal to Edit Product
   const handleOpenEdit = (prod) => {
     setEditingProduct(prod);
 
-    // Collect all product images into structured gallery items
+    // Collect all product images into structured gallery items with deduplication
+    const seenUrls = new Set();
     const productImages = [];
+    const addUnique = (url, isCover, alt) => {
+      const clean = (url || '').trim();
+      if (!clean) return;
+      const key = clean.toLowerCase();
+      if (seenUrls.has(key)) return;
+      seenUrls.add(key);
+      productImages.push({
+        url: clean,
+        isCover: Boolean(isCover),
+        alt: alt || prod.name || 'Product Photo',
+      });
+    };
+
     if (Array.isArray(prod.images) && prod.images.length > 0) {
       prod.images.forEach((img, idx) => {
-        const url = typeof img === 'string' ? img : img.url;
-        if (url) {
-          productImages.push({
-            url,
-            isCover: typeof img === 'object' ? Boolean(img.isCover) : idx === 0,
-            alt: typeof img === 'object' ? (img.alt || prod.name) : prod.name,
-          });
-        }
+        const url = typeof img === 'string' ? img : img?.url;
+        const isCover = typeof img === 'object' ? Boolean(img.isCover) : idx === 0;
+        const alt = typeof img === 'object' ? (img.alt || prod.name) : prod.name;
+        addUnique(url, isCover, alt);
       });
     } else if (prod.mainImage) {
-      productImages.push({
-        url: prod.mainImage,
-        isCover: true,
-        alt: prod.name || 'Cover Photo',
-      });
+      addUnique(prod.mainImage, true, prod.name || 'Cover Photo');
     }
 
     if (productImages.length > 0 && !productImages.some((img) => img.isCover)) {
@@ -245,6 +264,76 @@ export const ProductList = () => {
     setModalOpen(true);
   };
 
+  // Unified Gallery Image Inserter: handles deduplication, auto-replacing placeholders, and setting cover
+  const addImagesToGallery = (newUrls, options = {}) => {
+    const { setAsCover = true, replacePlaceholder = true } = options;
+    const urls = (Array.isArray(newUrls) ? newUrls : [newUrls])
+      .map((u) => (typeof u === 'string' ? u.trim() : u?.url ? String(u.url).trim() : ''))
+      .filter(Boolean);
+
+    if (urls.length === 0) return 0;
+
+    let countAdded = 0;
+    setForm((prev) => {
+      let current = [...(prev.images || [])];
+
+      // If current only contains placeholder image(s) and we're adding real photos,
+      // cleanly replace the placeholder so the user doesn't have old placeholder stuck!
+      if (replacePlaceholder && current.length > 0 && current.every((img) => isPlaceholderPhoto(img.url))) {
+        current = [];
+      }
+
+      const toAdd = [];
+      urls.forEach((u) => {
+        const canonicalU = u.toLowerCase();
+        const alreadyExists =
+          current.some((img) => (img.url || '').toLowerCase() === canonicalU) ||
+          toAdd.some((img) => (img.url || '').toLowerCase() === canonicalU);
+
+        if (!alreadyExists) {
+          toAdd.push({
+            url: u,
+            isCover: false,
+            alt: prev.name.trim() || 'Product Photo',
+          });
+          countAdded++;
+        }
+      });
+
+      if (toAdd.length === 0) {
+        return prev;
+      }
+
+      let updated;
+      if (setAsCover || current.length === 0) {
+        // Set first new image as cover, reset cover on existing
+        toAdd[0].isCover = true;
+        const demotedCurrent = current.map((img) => ({ ...img, isCover: false }));
+        // Put the newly uploaded cover photo right at the beginning
+        updated = [toAdd[0], ...demotedCurrent, ...toAdd.slice(1)];
+      } else {
+        updated = [...current, ...toAdd];
+      }
+
+      // Ensure exactly one is cover
+      let coverSeen = false;
+      updated = updated.map((img) => {
+        if (img.isCover && !coverSeen) {
+          coverSeen = true;
+          return { ...img, isCover: true };
+        }
+        return { ...img, isCover: false };
+      });
+      if (!coverSeen && updated.length > 0) {
+        updated[0].isCover = true;
+      }
+
+      return { ...prev, images: updated };
+    });
+
+    return countAdded;
+  };
+
   // Multiple Image Helpers
   const handleAddImageUrl = () => {
     if (!manualImageUrl.trim()) return;
@@ -255,48 +344,42 @@ export const ProductList = () => {
 
     if (urls.length === 0) return;
 
-    setForm((prev) => {
-      const current = [...(prev.images || [])];
-      urls.forEach((url) => {
-        if (!current.some((img) => img.url === url)) {
-          current.push({
-            url,
-            isCover: current.length === 0,
-            alt: prev.name.trim() || 'Product Photo',
-          });
-        }
-      });
-      return { ...prev, images: current };
-    });
+    const added = addImagesToGallery(urls, { setAsCover: true, replacePlaceholder: true });
     setManualImageUrl('');
-    addToast(`${urls.length} photo(s) added!`, 'info');
+    if (added > 0) {
+      addToast(`${added} photo(s) added & set as primary cover!`, 'success');
+    } else {
+      addToast('Image(s) already in gallery.', 'info');
+    }
   };
 
   const handleUploadImagesSuccess = (uploaded) => {
-    const urls = Array.isArray(uploaded) ? uploaded : [uploaded];
-    setForm((prev) => {
-      const current = [...(prev.images || [])];
-      urls.forEach((url) => {
-        if (url && !current.some((img) => img.url === url)) {
-          current.push({
-            url,
-            isCover: current.length === 0,
-            alt: prev.name.trim() || 'Product Photo',
-          });
-        }
-      });
-      return { ...prev, images: current };
-    });
+    const added = addImagesToGallery(uploaded, { setAsCover: true, replacePlaceholder: true });
+    if (added > 0) {
+      addToast(
+        added === 1
+          ? 'Photo uploaded & set as primary cover photo!'
+          : `${added} photos uploaded with cover updated!`,
+        'success'
+      );
+    }
   };
 
   const handleSetCoverImage = (index) => {
-    setForm((prev) => ({
-      ...prev,
-      images: (prev.images || []).map((img, idx) => ({
+    setForm((prev) => {
+      const images = (prev.images || []).map((img, idx) => ({
         ...img,
         isCover: idx === index,
-      })),
-    }));
+      }));
+      // Put cover photo at the beginning for intuitive layout
+      const coverItem = images.find((img) => img.isCover);
+      const otherItems = images.filter((img) => !img.isCover);
+      addToast('Primary cover photo updated!', 'info');
+      return {
+        ...prev,
+        images: coverItem ? [coverItem, ...otherItems] : images,
+      };
+    });
   };
 
   const handleRemoveImage = (index) => {
@@ -307,6 +390,7 @@ export const ProductList = () => {
       }
       return { ...prev, images: remaining };
     });
+    addToast('Photo removed from product gallery.', 'info');
   };
 
   // Load media library assets from server
@@ -387,7 +471,6 @@ export const ProductList = () => {
 
       if (uploadedUrls.length > 0) {
         handleUploadImagesSuccess(uploadedUrls);
-        addToast(`${uploadedUrls.length} photo(s) uploaded successfully from computer!`, 'success');
         loadMediaLibrary();
       } else {
         addToast('No images were uploaded.', 'error');
@@ -406,21 +489,12 @@ export const ProductList = () => {
       addToast('Please select an image from the dropdown first.', 'warning');
       return;
     }
-    const url = selectedMediaUrl.trim();
-    setForm((prev) => {
-      const current = [...(prev.images || [])];
-      if (!current.some((img) => img.url === url)) {
-        current.push({
-          url,
-          isCover: current.length === 0,
-          alt: prev.name.trim() || 'Product Photo',
-        });
-        addToast('Media image added to gallery!', 'success');
-      } else {
-        addToast('This image is already in the gallery.', 'info');
-      }
-      return { ...prev, images: current };
-    });
+    const added = addImagesToGallery([selectedMediaUrl], { setAsCover: true, replacePlaceholder: true });
+    if (added > 0) {
+      addToast('Media photo added & set as primary cover photo!', 'success');
+    } else {
+      addToast('This image is already in the gallery.', 'info');
+    }
     setSelectedMediaUrl('');
   };
 
@@ -471,8 +545,23 @@ export const ProductList = () => {
 
       const chosenCatId = form.category || categories[0]?._id;
 
-      // Handle images: ensure valid array and valid cover image
-      const validImages = (form.images || []).filter((img) => img.url && img.url.trim());
+      // Handle images: deduplicate, clean URLs, and ensure valid cover photo
+      const seenUrlSet = new Set();
+      const validImages = [];
+      (form.images || []).forEach((img) => {
+        const u = (typeof img === 'string' ? img : img?.url || '').trim();
+        if (!u) return;
+        const key = u.toLowerCase();
+        if (!seenUrlSet.has(key)) {
+          seenUrlSet.add(key);
+          validImages.push({
+            url: u,
+            isCover: Boolean(img.isCover),
+            alt: (typeof img === 'object' && img.alt) || form.name.trim() || 'Product Photo',
+          });
+        }
+      });
+
       if (validImages.length > 0 && !validImages.some((img) => img.isCover)) {
         validImages[0].isCover = true;
       }
@@ -481,6 +570,11 @@ export const ProductList = () => {
         validImages.find((img) => img.isCover)?.url ||
         validImages[0]?.url ||
         '/categories/chandelier.jpg';
+
+      // Reorder so cover image is first in the array
+      const coverItem = validImages.find((img) => img.isCover);
+      const otherItems = validImages.filter((img) => !img.isCover);
+      const finalImagesList = coverItem ? [coverItem, ...otherItems] : validImages;
 
       // Compile specifications
       const compiledSpecs = {
@@ -510,7 +604,7 @@ export const ProductList = () => {
         shortDescription: form.description.trim().slice(0, 160),
         price: form.price !== '' ? Number(form.price) : 0,
         mainImage: coverImg,
-        images: validImages.length > 0 ? validImages : [{ url: coverImg, isCover: true, alt: form.name.trim() }],
+        images: finalImagesList.length > 0 ? finalImagesList : [{ url: coverImg, isCover: true, alt: form.name.trim() }],
         specifications: compiledSpecs,
         isPublished: true,
       };
@@ -518,12 +612,21 @@ export const ProductList = () => {
       if (editingProduct) {
         const res = await productService.updateProduct(editingProduct._id, payload);
         if (res.success) {
-          addToast('Product updated successfully with specifications and gallery!', 'success');
+          addToast('Product updated successfully with new photos & specifications!', 'success');
+          // Optimistically update product in local table immediately
+          if (res.product) {
+            setProducts((prev) =>
+              prev.map((p) => (p._id === editingProduct._id ? res.product : p))
+            );
+          }
         }
       } else {
         const res = await productService.createProduct(payload);
         if (res.success) {
           addToast('Product added to catalog successfully!', 'success');
+          if (res.product) {
+            setProducts((prev) => [res.product, ...prev]);
+          }
         }
       }
 
@@ -1318,11 +1421,11 @@ export const ProductList = () => {
                       <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3">
                         {form.images.map((img, idx) => (
                           <div
-                            key={idx}
-                            className={`relative rounded-xl overflow-hidden bg-black border transition-all group aspect-square flex flex-col justify-between ${
+                            key={`${img.url}-${idx}`}
+                            className={`relative rounded-xl overflow-hidden bg-black border transition-all aspect-square flex flex-col justify-between ${
                               img.isCover
-                                ? 'border-[#DC2626] ring-2 ring-[#DC2626]/30'
-                                : 'border-white/15 hover:border-white/30'
+                                ? 'border-[#DC2626] ring-2 ring-[#DC2626]/40 shadow-lg shadow-[#DC2626]/20'
+                                : 'border-white/15 hover:border-white/40'
                             }`}
                           >
                             <img
@@ -1335,33 +1438,49 @@ export const ProductList = () => {
                               className="w-full h-full object-cover"
                             />
 
-                            {/* Cover Badge */}
-                            {img.isCover && (
-                              <div className="absolute top-1.5 left-1.5 bg-[#DC2626] text-white text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded shadow">
-                                Cover Photo
-                              </div>
-                            )}
+                            {/* Top Badges & Always-Visible Remove Button */}
+                            <div className="absolute top-1.5 inset-x-1.5 flex items-center justify-between z-10 pointer-events-none">
+                              {img.isCover ? (
+                                <span className="bg-[#DC2626] text-white text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded shadow pointer-events-auto flex items-center gap-1">
+                                  <Star className="w-2.5 h-2.5 fill-current" />
+                                  <span>Cover Photo</span>
+                                </span>
+                              ) : (
+                                <span className="bg-black/60 backdrop-blur-sm text-neutral-300 text-[9px] px-1.5 py-0.5 rounded pointer-events-auto">
+                                  #{idx + 1}
+                                </span>
+                              )}
 
-                            {/* Action overlay */}
-                            <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1.5 p-2">
-                              {!img.isCover && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleRemoveImage(idx);
+                                }}
+                                className="w-6 h-6 rounded-full bg-red-600/90 hover:bg-red-700 text-white flex items-center justify-center shadow-lg transition-transform hover:scale-110 pointer-events-auto cursor-pointer"
+                                title="Remove photo from gallery"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+
+                            {/* Bottom Status / Make Cover Controls (Always Visible) */}
+                            <div className="absolute bottom-0 inset-x-0 p-1.5 bg-gradient-to-t from-black/95 via-black/75 to-transparent z-10">
+                              {img.isCover ? (
+                                <div className="text-[10px] text-emerald-400 font-bold text-center py-0.5 flex items-center justify-center gap-1">
+                                  <Check className="w-3 h-3" />
+                                  <span>Active Primary</span>
+                                </div>
+                              ) : (
                                 <button
                                   type="button"
                                   onClick={() => handleSetCoverImage(idx)}
-                                  className="px-2 py-1 rounded bg-white/20 hover:bg-[#DC2626] text-white text-[10px] font-semibold transition-colors flex items-center gap-1"
+                                  className="w-full py-1 rounded-lg bg-white/20 hover:bg-[#DC2626] text-white text-[10px] font-semibold transition-colors flex items-center justify-center gap-1 cursor-pointer shadow"
                                 >
-                                  <Star className="w-3 h-3" />
+                                  <Star className="w-3 h-3 text-amber-400" />
                                   <span>Make Cover</span>
                                 </button>
                               )}
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveImage(idx)}
-                                className="px-2 py-1 rounded bg-red-500/30 hover:bg-red-600 text-white text-[10px] font-semibold transition-colors flex items-center gap-1"
-                              >
-                                <Trash2 className="w-3 h-3" />
-                                <span>Remove</span>
-                              </button>
                             </div>
                           </div>
                         ))}

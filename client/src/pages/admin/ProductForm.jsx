@@ -105,25 +105,31 @@ export const ProductForm = () => {
         if (res.success && res.product) {
           const p = res.product;
           
-          // Collect all product images into structured gallery items
+          // Collect all product images into structured gallery items with deduplication
+          const seenUrls = new Set();
           const productImages = [];
+          const addUnique = (url, isCover, alt) => {
+            const clean = (url || '').trim();
+            if (!clean) return;
+            const key = clean.toLowerCase();
+            if (seenUrls.has(key)) return;
+            seenUrls.add(key);
+            productImages.push({
+              url: clean,
+              isCover: Boolean(isCover),
+              alt: alt || p.name || 'Product Photo',
+            });
+          };
+
           if (Array.isArray(p.images) && p.images.length > 0) {
             p.images.forEach((img, idx) => {
-              const url = typeof img === 'string' ? img : img.url;
-              if (url) {
-                productImages.push({
-                  url,
-                  isCover: typeof img === 'object' ? Boolean(img.isCover) : idx === 0,
-                  alt: typeof img === 'object' ? (img.alt || p.name) : p.name,
-                });
-              }
+              const url = typeof img === 'string' ? img : img?.url;
+              const isCover = typeof img === 'object' ? Boolean(img.isCover) : idx === 0;
+              const alt = typeof img === 'object' ? (img.alt || p.name) : p.name;
+              addUnique(url, isCover, alt);
             });
           } else if (p.mainImage) {
-            productImages.push({
-              url: p.mainImage,
-              isCover: true,
-              alt: p.name || 'Cover Image',
-            });
+            addUnique(p.mainImage, true, p.name || 'Cover Image');
           }
 
           if (productImages.length > 0 && !productImages.some((img) => img.isCover)) {
@@ -167,66 +173,127 @@ export const ProductForm = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  // Check if image is default stock / category placeholder
+  const isPlaceholderPhoto = (url = '') => {
+    if (!url || typeof url !== 'string') return false;
+    const lower = url.toLowerCase().trim();
+    return (
+      lower.startsWith('/categories/') ||
+      lower.includes('placeholder') ||
+      lower === '/philosophy-grand-chandelier.jpg' ||
+      lower === '/craft-main.jpg' ||
+      lower === '/showroom-hero-hd.jpg'
+    );
+  };
+
+  // Unified Gallery Image Inserter: handles deduplication, auto-replacing placeholders, and setting cover
+  const addImagesToGallery = (newUrls, options = {}) => {
+    const { setAsCover = true, replacePlaceholder = true } = options;
+    const urls = (Array.isArray(newUrls) ? newUrls : [newUrls])
+      .map((u) => (typeof u === 'string' ? u.trim() : u?.url ? String(u.url).trim() : ''))
+      .filter(Boolean);
+
+    if (urls.length === 0) return 0;
+
+    let countAdded = 0;
+    setFormData((prev) => {
+      let current = [...(prev.images || [])];
+
+      // If current only contains placeholder image(s) and we're adding real photos,
+      // cleanly replace the placeholder so the user doesn't have old placeholder stuck!
+      if (replacePlaceholder && current.length > 0 && current.every((img) => isPlaceholderPhoto(img.url))) {
+        current = [];
+      }
+
+      const toAdd = [];
+      urls.forEach((u) => {
+        const canonicalU = u.toLowerCase();
+        const alreadyExists =
+          current.some((img) => (img.url || '').toLowerCase() === canonicalU) ||
+          toAdd.some((img) => (img.url || '').toLowerCase() === canonicalU);
+
+        if (!alreadyExists) {
+          toAdd.push({
+            url: u,
+            isCover: false,
+            alt: prev.name.trim() || 'Product Photo',
+          });
+          countAdded++;
+        }
+      });
+
+      if (toAdd.length === 0) {
+        return prev;
+      }
+
+      let updated;
+      if (setAsCover || current.length === 0) {
+        toAdd[0].isCover = true;
+        const demotedCurrent = current.map((img) => ({ ...img, isCover: false }));
+        updated = [toAdd[0], ...demotedCurrent, ...toAdd.slice(1)];
+      } else {
+        updated = [...current, ...toAdd];
+      }
+
+      let coverSeen = false;
+      updated = updated.map((img) => {
+        if (img.isCover && !coverSeen) {
+          coverSeen = true;
+          return { ...img, isCover: true };
+        }
+        return { ...img, isCover: false };
+      });
+      if (!coverSeen && updated.length > 0) {
+        updated[0].isCover = true;
+      }
+
+      return { ...prev, images: updated };
+    });
+
+    return countAdded;
+  };
+
   // Upload handler for single or multiple photos
   const handleUploadSuccess = (uploaded) => {
-    const urls = Array.isArray(uploaded) ? uploaded : [uploaded];
-    setFormData((prev) => {
-      const current = [...(prev.images || [])];
-      const newItems = urls
-        .filter((u) => u && !current.some((existing) => existing.url === u))
-        .map((url, i) => ({
-          url,
-          isCover: current.length === 0 && i === 0,
-          alt: prev.name.trim() || 'Product Photo',
-        }));
-      const combined = [...current, ...newItems];
-      if (combined.length > 0 && !combined.some((img) => img.isCover)) {
-        combined[0].isCover = true;
-      }
-      return { ...prev, images: combined };
-    });
-    addToast(
-      urls.length > 1
-        ? `${urls.length} photos added to product gallery!`
-        : 'Photo added to product gallery!',
-      'success'
-    );
+    const added = addImagesToGallery(uploaded, { setAsCover: true, replacePlaceholder: true });
+    if (added > 0) {
+      addToast(
+        added === 1
+          ? 'Photo added and set as primary cover photo!'
+          : `${added} photos added with cover photo updated!`,
+        'success'
+      );
+    }
   };
 
   // Add manual photo URL / path
   const handleAddManualUrl = () => {
     const url = manualUrlInput.trim();
     if (!url) return;
-    setFormData((prev) => {
-      const current = [...(prev.images || [])];
-      if (current.some((img) => img.url === url)) {
-        addToast('This photo is already added.', 'info');
-        return prev;
-      }
-      const newImages = [
-        ...current,
-        {
-          url,
-          isCover: current.length === 0,
-          alt: prev.name.trim() || 'Product Photo',
-        },
-      ];
-      return { ...prev, images: newImages };
-    });
+    const added = addImagesToGallery([url], { setAsCover: true, replacePlaceholder: true });
     setManualUrlInput('');
-    addToast('Photo URL added to gallery!', 'success');
+    if (added > 0) {
+      addToast('Photo URL added and set as cover!', 'success');
+    } else {
+      addToast('This photo is already in the gallery.', 'info');
+    }
   };
 
   // Set selected photo as Cover / Primary image
   const handleSetCover = (indexToCover) => {
-    setFormData((prev) => ({
-      ...prev,
-      images: prev.images.map((img, idx) => ({
+    setFormData((prev) => {
+      const images = (prev.images || []).map((img, idx) => ({
         ...img,
         isCover: idx === indexToCover,
-      })),
-    }));
-    addToast('Cover image updated!', 'info');
+      }));
+      const coverItem = images.find((img) => img.isCover);
+      const otherItems = images.filter((img) => !img.isCover);
+      addToast('Primary cover photo updated!', 'info');
+      return {
+        ...prev,
+        images: coverItem ? [coverItem, ...otherItems] : images,
+      };
+    });
   };
 
   // Remove photo from gallery
@@ -238,7 +305,7 @@ export const ProductForm = () => {
       }
       return { ...prev, images: filtered };
     });
-    addToast('Photo removed from product.', 'info');
+    addToast('Photo removed from product gallery.', 'info');
   };
 
   // Load media library assets from server
@@ -321,21 +388,12 @@ export const ProductForm = () => {
       addToast('Please select an image from the dropdown first.', 'warning');
       return;
     }
-    const url = selectedMediaUrl.trim();
-    setFormData((prev) => {
-      const current = [...(prev.images || [])];
-      if (!current.some((img) => img.url === url)) {
-        current.push({
-          url,
-          isCover: current.length === 0,
-          alt: prev.name.trim() || 'Product Photo',
-        });
-        addToast('Media image added to gallery!', 'success');
-      } else {
-        addToast('This image is already in the gallery.', 'info');
-      }
-      return { ...prev, images: current };
-    });
+    const added = addImagesToGallery([selectedMediaUrl], { setAsCover: true, replacePlaceholder: true });
+    if (added > 0) {
+      addToast('Media photo added & set as primary cover photo!', 'success');
+    } else {
+      addToast('This image is already in the gallery.', 'info');
+    }
     setSelectedMediaUrl('');
   };
 
@@ -359,16 +417,35 @@ export const ProductForm = () => {
         formData.sku.trim() ||
         `LH-${Date.now().toString().slice(-6)}-${Math.floor(100 + Math.random() * 900)}`;
 
+      // Deduplicate images and clean URLs
+      const seenUrlSet = new Set();
+      const validImages = [];
+      (formData.images || []).forEach((img) => {
+        const u = (typeof img === 'string' ? img : img?.url || '').trim();
+        if (!u) return;
+        const key = u.toLowerCase();
+        if (!seenUrlSet.has(key)) {
+          seenUrlSet.add(key);
+          validImages.push({
+            url: u,
+            isCover: Boolean(img.isCover),
+            alt: (typeof img === 'object' && img.alt) || formData.name.trim() || 'Product Photo',
+          });
+        }
+      });
+
+      if (validImages.length > 0 && !validImages.some((img) => img.isCover)) {
+        validImages[0].isCover = true;
+      }
+
       const coverImage =
-        formData.images.find((img) => img.isCover)?.url ||
-        formData.images[0]?.url ||
+        validImages.find((img) => img.isCover)?.url ||
+        validImages[0]?.url ||
         '';
 
-      const formattedImages = (formData.images || []).map((img, idx) => ({
-        url: img.url,
-        isCover: Boolean(img.isCover),
-        alt: img.alt || formData.name.trim() || `View ${idx + 1}`,
-      }));
+      const coverItem = validImages.find((img) => img.isCover);
+      const otherItems = validImages.filter((img) => !img.isCover);
+      const finalImagesList = coverItem ? [coverItem, ...otherItems] : validImages;
 
       const payload = {
         name: formData.name.trim(),
@@ -380,7 +457,7 @@ export const ProductForm = () => {
         description: formData.description.trim(),
         shortDescription: formData.description.trim().slice(0, 160),
         mainImage: coverImage,
-        images: formattedImages,
+        images: finalImagesList,
         sku: generatedSku,
         specifications: {
           dimensions: formData.size.trim(),

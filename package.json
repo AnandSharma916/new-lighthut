@@ -12,7 +12,8 @@
     "dev:server": "npm --prefix server run dev",
     "start:server": "npm --prefix server start",
     "seed": "npm --prefix server run seed",
-    "seed:admin": "npm --prefix server run seed:admin"
+    "seed:admin": "npm --prefix server run seed:admin",
+    "install:all": "npm install && npm --prefix server install && npm --prefix client install"
   },
   "devDependencies": {
     "concurrently": "^10.0.5"

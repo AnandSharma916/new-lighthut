@@ -1,9 +1,11 @@
 import jwt from 'jsonwebtoken';
 import Admin from '../models/Admin.js';
 
+const JWT_SECRET = process.env.JWT_SECRET || 'lighthut_super_secret_jwt_key_2026_luxury_lighting_production';
+
 // Helper to generate JWT
 const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
+  return jwt.sign({ id }, JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
   });
 };
