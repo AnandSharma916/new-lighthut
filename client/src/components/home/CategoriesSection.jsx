@@ -123,7 +123,7 @@ export const CategoriesSection = ({ section }) => {
                   src={category.image}
                   onError={(e) => {
                     e.currentTarget.onerror = null;
-                    e.currentTarget.src = '/categories/chandelier.jpg';
+                    e.currentTarget.src = '/craft-main.jpg';
                   }}
                   alt={category.name}
                   className="w-full h-full object-cover object-center transform group-hover:scale-106 transition-transform duration-700 ease-out"

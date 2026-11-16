@@ -24,6 +24,7 @@ import { ProductCard, getCategoryDefaultCover } from '../../components/catalog/P
 import { useSettings } from '../../context/SettingsContext';
 import { CascadingCategoryDropdown, PRODUCT_CATEGORIES_DATA } from '../../components/common/CascadingCategoryDropdown';
 import { MASTER_CATEGORIES, MASTER_PRODUCTS } from '../../data/catalogData';
+import { NEUTRAL_FALLBACK_IMAGE } from '../../utils/imageCompressor';
 
 // Curated Category Metadata & Icons Helper
 const CATEGORY_META_HELPER = {
@@ -341,9 +342,9 @@ export const Catalog = () => {
         p.images?.[0]?.url ||
         getCategoryDefaultCover(subKey || catKey);
 
-      if (!rawUrl) rawUrl = '/categories/chandelier.jpg';
+      if (!rawUrl) rawUrl = NEUTRAL_FALLBACK_IMAGE;
 
-      if (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) {
+      if (rawUrl.startsWith('http://') || rawUrl.startsWith('https://') || rawUrl.startsWith('data:')) {
         return rawUrl;
       }
       return `${window.location.origin}${rawUrl.startsWith('/') ? '' : '/'}${rawUrl}`;
@@ -442,7 +443,7 @@ export const Catalog = () => {
               alt="${p.name}" 
               loading="eager"
               crossorigin="anonymous"
-              onerror="this.onerror=null; this.src='${window.location.origin}/categories/chandelier.jpg';"
+              onerror="this.onerror=null; this.src='${NEUTRAL_FALLBACK_IMAGE}';"
             />
           </div>
           <div class="cat-tag">${p.categoryName || p.category?.name || activeCategoryData?.name || 'Architectural Lighting'}</div>
@@ -786,7 +787,7 @@ export const Catalog = () => {
                   } else {
                     img.addEventListener('load', checkItem, { once: true });
                     img.addEventListener('error', function() {
-                      img.src = '${window.location.origin}/categories/chandelier.jpg';
+                      img.src = '${NEUTRAL_FALLBACK_IMAGE}';
                       checkItem();
                     }, { once: true });
                   }
@@ -1381,7 +1382,7 @@ export const Catalog = () => {
                             alt={cat.name}
                             onError={(e) => {
                               e.currentTarget.onerror = null;
-                              e.currentTarget.src = '/categories/chandelier.jpg';
+                              e.currentTarget.src = getCategoryDefaultCover(cat.slug) || NEUTRAL_FALLBACK_IMAGE;
                             }}
                             className="w-full h-full object-cover object-center group-hover:scale-108 transition-transform duration-700 ease-out"
                             loading="lazy"

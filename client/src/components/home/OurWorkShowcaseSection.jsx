@@ -245,7 +245,7 @@ export const OurWorkShowcaseSection = () => {
                 <img
                   src={item.image}
                   onError={(e) => {
-                    e.target.src = '/categories/chandelier.jpg';
+                    e.target.src = '/craft-main.jpg';
                   }}
                   alt={item.title}
                   className="w-full h-full object-cover object-center transform group-hover:scale-108 transition-transform duration-700 ease-out"

@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { UploadCloud, X, Loader2, Image as ImageIcon } from 'lucide-react';
 import { uploadService } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
+import { compressImageFile } from '../../utils/imageCompressor';
 
 export const ImageUploader = ({ onUploadSuccess, label = 'Upload Images', multiple = false }) => {
   const { addToast } = useToast();
@@ -13,51 +14,65 @@ export const ImageUploader = ({ onUploadSuccess, label = 'Upload Images', multip
     if (!files || files.length === 0) return;
     const fileList = Array.from(files);
 
-    // Validate size (max 10MB per file)
-    for (const file of fileList) {
-      if (file.size > 10 * 1024 * 1024) {
-        addToast(`"${file.name}" exceeds the 10MB limit.`, 'error');
-        return;
-      }
-    }
-
     try {
       setUploading(true);
+
+      // STEP 1: Immediately compress to Base64 data URLs for instant preview
+      const compressedResults = await Promise.all(
+        fileList.map((file) => compressImageFile(file, { maxWidth: 1200, maxHeight: 1200, quality: 0.82 }))
+      );
+
+      const base64Urls = compressedResults.map((r) => r.dataUrl);
+
+      // Immediately notify parent with lightweight Base64 URLs so user sees preview without 404 risk
+      if (onUploadSuccess) {
+        if (multiple) {
+          onUploadSuccess(base64Urls);
+        } else {
+          onUploadSuccess(base64Urls[0]);
+        }
+      }
+
+      // STEP 2: Background upload to server
       if (multiple && fileList.length > 1) {
         const formData = new FormData();
-        fileList.forEach((file) => formData.append('files', file));
+        compressedResults.forEach((r) => formData.append('files', r.file));
         try {
           const data = await uploadService.uploadMultiple(formData);
           if (data.success && data.files && data.files.length > 0) {
-            addToast(`${data.files.length} photos uploaded successfully!`, 'success');
+            addToast(`${data.files.length} photo(s) stored in media library!`, 'success');
             if (onUploadSuccess) {
               onUploadSuccess(data.files.map((f) => f.url), data.files);
             }
             return;
           }
         } catch (multiErr) {
-          // If bulk route fails, fall back to individual uploads below
+          // If bulk route fails, fall back to sequential upload below
         }
       }
 
       // Upload sequentially
       const uploadedUrls = [];
       const uploadedDocs = [];
-      for (const file of fileList) {
+      for (const res of compressedResults) {
         const formData = new FormData();
-        formData.append('file', file);
-        const data = await uploadService.uploadSingle(formData);
-        if (data.success && data.file) {
-          uploadedUrls.push(data.file.url);
-          uploadedDocs.push(data.file);
+        formData.append('file', res.file);
+        try {
+          const data = await uploadService.uploadSingle(formData);
+          if (data.success && data.file) {
+            uploadedUrls.push(data.file.url);
+            uploadedDocs.push(data.file);
+          }
+        } catch (singleErr) {
+          console.warn('Single file upload warning:', singleErr.message);
         }
       }
 
       if (uploadedUrls.length > 0) {
         addToast(
           uploadedUrls.length === 1
-            ? 'Photo uploaded successfully!'
-            : `${uploadedUrls.length} photos uploaded successfully!`,
+            ? 'Photo saved to media library!'
+            : `${uploadedUrls.length} photos saved to media library!`,
           'success'
         );
         if (onUploadSuccess) {
@@ -69,7 +84,8 @@ export const ImageUploader = ({ onUploadSuccess, label = 'Upload Images', multip
         }
       }
     } catch (err) {
-      addToast(err.response?.data?.message || 'Failed to upload image.', 'error');
+      console.error('[ImageUploader] Processing error:', err);
+      addToast(err.response?.data?.message || 'Error processing image file.', 'error');
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';

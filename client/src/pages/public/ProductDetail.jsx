@@ -28,6 +28,7 @@ import { InquiryModal } from '../../components/common/InquiryModal';
 import { useToast } from '../../context/ToastContext';
 import { useSettings } from '../../context/SettingsContext';
 import { LightHut } from '../../components/common/BrandWordmark';
+import { NEUTRAL_FALLBACK_IMAGE } from '../../utils/imageCompressor';
 import { MASTER_PRODUCTS } from '../../data/catalogData';
 
 const CATEGORY_BANNER_MAP = {
@@ -217,10 +218,10 @@ export const ProductDetail = () => {
     });
   }
 
-  // Products without uploaded images fall back to their category cover
+  // Products without uploaded images fall back to their category cover or neutral placeholder
   if (rawImages.length === 0) {
     rawImages.push({
-      url: CATEGORY_BANNER_MAP[catKey] || '/categories/chandelier.jpg',
+      url: CATEGORY_BANNER_MAP[catKey] || NEUTRAL_FALLBACK_IMAGE,
       label: 'Primary Studio View',
       tag: 'Official Specimen',
       alt: product.name,
@@ -389,7 +390,7 @@ export const ProductDetail = () => {
                 src={currentImage.url}
                 onError={(e) => {
                   e.currentTarget.onerror = null;
-                  e.currentTarget.src = '/categories/chandelier.jpg';
+                  e.currentTarget.src = CATEGORY_BANNER_MAP[catKey] || NEUTRAL_FALLBACK_IMAGE;
                 }}
                 alt={currentImage.alt || product.name}
                 className={`w-full h-full object-cover object-center transition-all duration-700 group-hover:scale-105 ${
@@ -499,7 +500,7 @@ export const ProductDetail = () => {
                       src={img.url}
                       onError={(e) => {
                         e.currentTarget.onerror = null;
-                        e.currentTarget.src = '/categories/chandelier.jpg';
+                        e.currentTarget.src = CATEGORY_BANNER_MAP[catKey] || NEUTRAL_FALLBACK_IMAGE;
                       }}
                       alt={img.label}
                       className="w-full h-full object-cover"
@@ -662,7 +663,7 @@ export const ProductDetail = () => {
                   src={item.url}
                   onError={(e) => {
                     e.currentTarget.onerror = null;
-                    e.currentTarget.src = '/categories/chandelier.jpg';
+                    e.currentTarget.src = CATEGORY_BANNER_MAP[catKey] || NEUTRAL_FALLBACK_IMAGE;
                   }}
                   alt={item.label}
                   className="w-full h-full object-cover object-center group-hover:scale-108 transition-transform duration-700 ease-out"
@@ -868,7 +869,7 @@ export const ProductDetail = () => {
                 src={images[selectedImageIndex]?.url}
                 onError={(e) => {
                   e.currentTarget.onerror = null;
-                  e.currentTarget.src = '/categories/chandelier.jpg';
+                  e.currentTarget.src = CATEGORY_BANNER_MAP[catKey] || NEUTRAL_FALLBACK_IMAGE;
                 }}
                 alt={images[selectedImageIndex]?.label}
                 className="max-h-[70vh] max-w-full object-contain rounded-2xl shadow-2xl"

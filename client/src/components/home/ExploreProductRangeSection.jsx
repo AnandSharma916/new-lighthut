@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { MASTER_CATEGORIES } from '../../data/catalogData';
+import { NEUTRAL_FALLBACK_IMAGE } from '../../utils/imageCompressor';
 
 // Tailored high-definition photography for each of the 10 lighting categories
 const CATEGORY_IMAGE_MAP = {
@@ -352,7 +353,7 @@ export const ExploreProductRangeSection = ({ section }) => {
                   <img
                     src={imageSrc}
                     onError={(e) => {
-                      e.target.src = '/categories/chandelier.jpg';
+                      e.target.src = CATEGORY_IMAGE_MAP[item.slug] || NEUTRAL_FALLBACK_IMAGE;
                     }}
                     alt={item.name}
                     className="w-full h-full object-cover object-center transform transition-transform duration-700 ease-out hover:scale-105 pointer-events-none filter brightness-[1.03] contrast-[1.03]"

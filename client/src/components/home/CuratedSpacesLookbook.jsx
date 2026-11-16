@@ -426,7 +426,7 @@ export const CuratedSpacesLookbook = ({ section }) => {
                     src={space.image}
                     draggable={false}
                     onError={(e) => {
-                      e.target.src = '/categories/chandelier.jpg';
+                      e.target.src = '/craft-main.jpg';
                     }}
                     alt={space.title}
                     className="w-full h-full object-cover object-center transform group-hover:scale-106 transition-transform duration-700 ease-out pointer-events-none select-none"

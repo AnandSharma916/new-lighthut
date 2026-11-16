@@ -18,6 +18,7 @@ import { categoryService } from '../../services/api';
 import { useSettings } from '../../context/SettingsContext';
 import { MASTER_CATEGORIES } from '../../data/catalogData';
 import { PRODUCT_CATEGORIES_DATA } from '../../components/common/CascadingCategoryDropdown';
+import { NEUTRAL_FALLBACK_IMAGE } from '../../utils/imageCompressor';
 
 export const Categories = () => {
   const { settings } = useSettings();
@@ -147,10 +148,10 @@ export const Categories = () => {
                     className="group relative block h-60 overflow-hidden bg-neutral-950 shrink-0"
                   >
                     <img
-                      src={category.image || `/categories/${category.slug}.jpg` || '/categories/chandelier.jpg'}
+                      src={category.image || `/categories/${category.slug}.jpg` || NEUTRAL_FALLBACK_IMAGE}
                       onError={(e) => {
                         e.currentTarget.onerror = null;
-                        e.currentTarget.src = '/categories/chandelier.jpg';
+                        e.currentTarget.src = NEUTRAL_FALLBACK_IMAGE;
                       }}
                       alt={category.name}
                       className="w-full h-full object-cover object-center group-hover:scale-108 transition-transform duration-700 ease-out brightness-[1.0] contrast-[1.02]"

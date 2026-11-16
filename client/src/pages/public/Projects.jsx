@@ -141,7 +141,7 @@ export const Projects = () => {
           <img
             src="/showroom-hero-hd.jpg"
             onError={(e) => {
-              e.target.src = '/categories/chandelier.jpg';
+              e.target.src = '/craft-main.jpg';
             }}
             alt="Architectural Lighting Projects & Masterpiece Installations"
             className="w-full h-full object-cover object-center filter brightness-[0.85] contrast-[1.05]"

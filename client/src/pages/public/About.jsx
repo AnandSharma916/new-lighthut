@@ -174,7 +174,7 @@ export const About = () => {
             src="/showroom-hero-hd.jpg"
             onError={(e) => {
               e.currentTarget.onerror = null;
-              e.currentTarget.src = '/categories/chandelier.jpg';
+              e.currentTarget.src = '/craft-main.jpg';
             }}
             alt="Heritage & Architectural Vision - LightHut Flagship Showroom"
             loading="eager"
@@ -420,7 +420,7 @@ export const About = () => {
                 src={tradeProjectImages[activeProjectImg].url}
                 onError={(e) => {
                   e.currentTarget.onerror = null;
-                  e.currentTarget.src = '/categories/chandelier.jpg';
+                  e.currentTarget.src = '/craft-main.jpg';
                 }}
                 alt={tradeProjectImages[activeProjectImg].title}
                 className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 brightness-105"

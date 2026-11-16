@@ -79,7 +79,7 @@ export const AboutSection = ({ section }) => {
                   src="/craft-detail.jpg"
                   onError={(e) => {
                     e.currentTarget.onerror = null;
-                    e.currentTarget.src = '/categories/chandelier.jpg';
+                    e.currentTarget.src = '/craft-main.jpg';
                   }}
                   alt="Handcrafted Artisan Assembly"
                   className="w-full h-full object-cover object-center transform group-hover/detail:scale-108 transition-transform duration-700 ease-out"

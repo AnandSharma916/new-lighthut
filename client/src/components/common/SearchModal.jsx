@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, X, ArrowRight, Lightbulb, Loader2 } from 'lucide-react';
 import { productService } from '../../services/api';
+import { NEUTRAL_FALLBACK_IMAGE } from '../../utils/imageCompressor';
 
 export const SearchModal = ({ isOpen, onClose }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -119,10 +120,10 @@ export const SearchModal = ({ isOpen, onClose }) => {
                       >
                         <div className="w-14 h-14 rounded-lg overflow-hidden bg-neutral-100 border border-neutral-200 shrink-0">
                           <img
-                            src={product.images?.[0]?.url || '/categories/chandelier.jpg'}
+                            src={product.images?.[0]?.url || NEUTRAL_FALLBACK_IMAGE}
                             onError={(e) => {
                               e.currentTarget.onerror = null;
-                              e.currentTarget.src = '/categories/chandelier.jpg';
+                              e.currentTarget.src = NEUTRAL_FALLBACK_IMAGE;
                             }}
                             alt={product.name}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"

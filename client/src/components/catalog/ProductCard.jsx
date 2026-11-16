@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { InquiryModal } from '../common/InquiryModal';
 import { useSettings } from '../../context/SettingsContext';
+import { NEUTRAL_FALLBACK_IMAGE } from '../../utils/imageCompressor';
 
 // Curated high-resolution secondary hover images by category (ensures every product has an authentic HD alternate view)
 const CATEGORY_HOVER_MAP = {
@@ -72,7 +73,8 @@ export const getCategoryDefaultCover = (cat) => {
   if (c.includes('bulb') || c.includes('filament')) return '/categories/led-filament-bulb.jpg';
   if (c.includes('driver')) return '/categories/spare-driver.jpg';
   if (c.includes('base') || c.includes('spare')) return '/categories/hanging-base.jpg';
-  return '/categories/chandelier.jpg';
+  if (c.includes('chandelier')) return '/categories/chandelier.jpg';
+  return NEUTRAL_FALLBACK_IMAGE;
 };
 
 export const ProductCard = ({ product, hidePricing = false }) => {
@@ -293,7 +295,7 @@ export const ProductCard = ({ product, hidePricing = false }) => {
                     src={coverImage}
                     onError={(e) => {
                       e.currentTarget.onerror = null;
-                      e.currentTarget.src = '/categories/chandelier.jpg';
+                      e.currentTarget.src = getCategoryDefaultCover(subKey || catKey);
                     }}
                     alt={product.name}
                     className="w-full h-full object-cover object-center"

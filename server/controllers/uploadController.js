@@ -32,8 +32,15 @@ export const uploadFile = async (req, res, next) => {
         fs.unlinkSync(req.file.path);
       }
     } else {
-      // Local storage fallback: serve from /uploads
-      fileUrl = `/uploads/${req.file.filename}`;
+      // Ephemeral disk immunity: for images under 5MB, generate a permanent Base64 data URL
+      // so the image NEVER 404s when Render/serverless container restarts or sleeps
+      const isImage = req.file.mimetype && req.file.mimetype.startsWith('image/');
+      if (isImage && req.file.size <= 5 * 1024 * 1024 && fs.existsSync(req.file.path)) {
+        const fileBuffer = fs.readFileSync(req.file.path);
+        fileUrl = `data:${req.file.mimetype};base64,${fileBuffer.toString('base64')}`;
+      } else {
+        fileUrl = `/uploads/${req.file.filename}`;
+      }
       publicId = req.file.filename;
     }
 
@@ -100,7 +107,14 @@ export const uploadMultiple = async (req, res, next) => {
           fs.unlinkSync(file.path);
         }
       } else {
-        fileUrl = `/uploads/${file.filename}`;
+        // Ephemeral disk immunity: for images under 5MB, generate a permanent Base64 data URL
+        const isImage = file.mimetype && file.mimetype.startsWith('image/');
+        if (isImage && file.size <= 5 * 1024 * 1024 && fs.existsSync(file.path)) {
+          const fileBuffer = fs.readFileSync(file.path);
+          fileUrl = `data:${file.mimetype};base64,${fileBuffer.toString('base64')}`;
+        } else {
+          fileUrl = `/uploads/${file.filename}`;
+        }
         publicId = file.filename;
       }
 

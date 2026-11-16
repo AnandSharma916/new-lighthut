@@ -24,6 +24,11 @@ import { useToast } from '../../context/ToastContext';
 import { ConfirmModal } from '../../components/admin/ConfirmModal';
 import { ImageUploader } from '../../components/admin/ImageUploader';
 import { CategorySelectorWithOptions } from '../../components/admin/CategorySelectorWithOptions';
+import {
+  compressImageFile,
+  isPlaceholderPhoto,
+  NEUTRAL_FALLBACK_IMAGE,
+} from '../../utils/imageCompressor';
 
 const PRESET_MEDIA_OPTIONS = [
   { label: 'Chandelier Default (/categories/chandelier.jpg)', url: '/categories/chandelier.jpg' },
@@ -167,19 +172,6 @@ export const ProductList = () => {
     setModalOpen(true);
   };
 
-  // Check if image is a default stock / category placeholder
-  const isPlaceholderPhoto = (url = '') => {
-    if (!url || typeof url !== 'string') return false;
-    const lower = url.toLowerCase().trim();
-    return (
-      lower.startsWith('/categories/') ||
-      lower.includes('placeholder') ||
-      lower === '/philosophy-grand-chandelier.jpg' ||
-      lower === '/craft-main.jpg' ||
-      lower === '/showroom-hero-hd.jpg'
-    );
-  };
-
   // Open Modal to Edit Product
   const handleOpenEdit = (prod) => {
     setEditingProduct(prod);
@@ -209,6 +201,13 @@ export const ProductList = () => {
       });
     } else if (prod.mainImage) {
       addUnique(prod.mainImage, true, prod.name || 'Cover Photo');
+    }
+
+    // If there is any real non-placeholder image, drop all placeholder images
+    if (productImages.some((img) => !isPlaceholderPhoto(img.url))) {
+      const realImages = productImages.filter((img) => !isPlaceholderPhoto(img.url));
+      productImages.length = 0;
+      productImages.push(...realImages);
     }
 
     if (productImages.length > 0 && !productImages.some((img) => img.isCover)) {
@@ -277,10 +276,10 @@ export const ProductList = () => {
     setForm((prev) => {
       let current = [...(prev.images || [])];
 
-      // If current only contains placeholder image(s) and we're adding real photos,
-      // cleanly replace the placeholder so the user doesn't have old placeholder stuck!
-      if (replacePlaceholder && current.length > 0 && current.every((img) => isPlaceholderPhoto(img.url))) {
-        current = [];
+      // If current contains placeholder/chandelier image(s) and we're adding real photos,
+      // cleanly replace and purge them so the old chandelier is completely removed!
+      if (replacePlaceholder && current.length > 0) {
+        current = current.filter((img) => !isPlaceholderPhoto(img.url));
       }
 
       const toAdd = [];
@@ -434,49 +433,52 @@ export const ProductList = () => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
 
-    for (const file of files) {
-      if (file.size > 10 * 1024 * 1024) {
-        addToast(`"${file.name}" exceeds the 10MB limit.`, 'error');
-        return;
-      }
-    }
-
     try {
       setBrowserUploading(true);
-      let uploadedUrls = [];
 
-      if (files.length > 1) {
+      // STEP 1: Instantly downscale & convert to crisp Base64 Data URL (0ms preview latency, 100% immune to 404s)
+      const compressedResults = await Promise.all(
+        files.map((file) => compressImageFile(file, { maxWidth: 1200, maxHeight: 1200, quality: 0.82 }))
+      );
+
+      const base64Urls = compressedResults.map((r) => r.dataUrl);
+
+      // STEP 2: Instantly insert into gallery as primary cover, dropping any old chandelier
+      addImagesToGallery(base64Urls, { setAsCover: true, replacePlaceholder: true });
+      addToast(
+        base64Urls.length === 1
+          ? 'Photo loaded & set as primary cover photo!'
+          : `${base64Urls.length} photos loaded with cover updated!`,
+        'success'
+      );
+
+      // STEP 3: Attempt background server upload (replaces Base64 with permanent Cloudinary URL if available)
+      try {
         const formData = new FormData();
-        files.forEach((file) => formData.append('files', file));
-        try {
-          const res = await uploadService.uploadMultiple(formData);
-          if (res && res.success && res.files && res.files.length > 0) {
-            uploadedUrls = res.files.map((f) => f.url);
-          }
-        } catch (multiErr) {
-          console.warn('Batch upload fallback:', multiErr);
+        compressedResults.forEach((r) => formData.append('files', r.file));
+        const res = await uploadService.uploadMultiple(formData);
+        if (res && res.success && res.files && res.files.length > 0) {
+          const serverUrls = res.files.map((f) => f.url);
+          setForm((prev) => {
+            const current = [...(prev.images || [])];
+            const updated = current.map((img) => {
+              const matchIdx = base64Urls.indexOf(img.url);
+              if (matchIdx !== -1 && serverUrls[matchIdx]) {
+                return { ...img, url: serverUrls[matchIdx] };
+              }
+              return img;
+            });
+            return { ...prev, images: updated };
+          });
         }
+      } catch (uploadErr) {
+        console.warn('Background server upload fallback (safely keeping Base64 data URL):', uploadErr.message);
       }
 
-      if (uploadedUrls.length === 0) {
-        for (const file of files) {
-          const formData = new FormData();
-          formData.append('file', file);
-          const res = await uploadService.uploadSingle(formData);
-          if (res && res.success && res.file && res.file.url) {
-            uploadedUrls.push(res.file.url);
-          }
-        }
-      }
-
-      if (uploadedUrls.length > 0) {
-        handleUploadImagesSuccess(uploadedUrls);
-        loadMediaLibrary();
-      } else {
-        addToast('No images were uploaded.', 'error');
-      }
+      loadMediaLibrary();
     } catch (err) {
-      addToast(err.response?.data?.message || 'Failed to upload selected images.', 'error');
+      console.error('File selection error:', err);
+      addToast('Error processing selected image(s).', 'error');
     } finally {
       setBrowserUploading(false);
       if (e.target) e.target.value = '';
@@ -569,7 +571,7 @@ export const ProductList = () => {
       const coverImg =
         validImages.find((img) => img.isCover)?.url ||
         validImages[0]?.url ||
-        '/categories/chandelier.jpg';
+        NEUTRAL_FALLBACK_IMAGE;
 
       // Reorder so cover image is first in the array
       const coverItem = validImages.find((img) => img.isCover);
@@ -764,7 +766,7 @@ export const ProductList = () => {
                     prod.images?.find((img) => img.isCover)?.url ||
                     prod.images?.[0]?.url ||
                     (typeof prod.images?.[0] === 'string' ? prod.images[0] : '') ||
-                    '/categories/chandelier.jpg';
+                    NEUTRAL_FALLBACK_IMAGE;
 
                   const priceDisplay =
                     prod.price > 0 ? `₹${Number(prod.price).toLocaleString('en-IN')}` : '₹0';
@@ -781,7 +783,7 @@ export const ProductList = () => {
                             src={coverImg}
                             onError={(e) => {
                               e.currentTarget.onerror = null;
-                              e.currentTarget.src = '/categories/chandelier.jpg';
+                              e.currentTarget.src = NEUTRAL_FALLBACK_IMAGE;
                             }}
                             alt={prod.name}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform"
@@ -1433,7 +1435,7 @@ export const ProductList = () => {
                               alt={img.alt || `Product photo ${idx + 1}`}
                               onError={(e) => {
                                 e.currentTarget.onerror = null;
-                                e.currentTarget.src = '/categories/chandelier.jpg';
+                                e.currentTarget.src = NEUTRAL_FALLBACK_IMAGE;
                               }}
                               className="w-full h-full object-cover"
                             />

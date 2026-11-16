@@ -14,6 +14,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { NEUTRAL_FALLBACK_IMAGE } from '../../utils/imageCompressor';
 
 export const ProductPreviewModal = ({
   isOpen,
@@ -156,7 +157,7 @@ export const ProductPreviewModal = ({
                       src={activeImage}
                       onError={(e) => {
                         e.currentTarget.onerror = null;
-                        e.currentTarget.src = '/categories/chandelier.jpg';
+                        e.currentTarget.src = NEUTRAL_FALLBACK_IMAGE;
                       }}
                       alt={title}
                       className="w-full h-full object-contain p-2 transition-all duration-300"
@@ -201,7 +202,7 @@ export const ProductPreviewModal = ({
                           src={img}
                           onError={(e) => {
                             e.currentTarget.onerror = null;
-                            e.currentTarget.src = '/categories/chandelier.jpg';
+                            e.currentTarget.src = NEUTRAL_FALLBACK_IMAGE;
                           }}
                           alt={`Thumb ${idx}`}
                           className="w-full h-full object-cover"

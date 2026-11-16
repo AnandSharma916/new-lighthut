@@ -265,12 +265,31 @@ export const getProductById = async (req, res, next) => {
 export const normalizeProductImages = (images = [], mainImage = '', defaultAlt = '') => {
   const cleanUrl = (u) => (typeof u === 'string' ? u.trim() : '');
 
-  // Normalized key for deduplication (matches relative vs absolute paths)
+  const isPlaceholder = (u = '') => {
+    const s = String(u || '').toLowerCase().trim();
+    if (!s) return true;
+    if (s.startsWith('data:image/') || s.includes('res.cloudinary.com')) return false;
+    return (
+      s.includes('/categories/') ||
+      s.includes('chandelier') ||
+      s.includes('placeholder') ||
+      s.includes('hero-chandelier') ||
+      s.includes('philosophy-grand-chandelier') ||
+      s.includes('craft-main') ||
+      s.includes('showroom-hero') ||
+      s.includes('double-height.jpg')
+    );
+  };
+
+  // Normalized key for deduplication
   const getCanonicalKey = (url) => {
     if (!url) return '';
+    if (url.startsWith('data:')) {
+      return url.slice(0, 100);
+    }
     try {
       const parsed = new URL(url, 'http://localhost');
-      return parsed.pathname.replace(/\/+/g, '/').toLowerCase();
+      return (parsed.pathname + parsed.search).replace(/\/+/g, '/').toLowerCase();
     } catch {
       return url.trim().replace(/\/+/g, '/').toLowerCase();
     }
@@ -296,7 +315,7 @@ export const normalizeProductImages = (images = [], mainImage = '', defaultAlt =
 
   const targetCoverKey = getCanonicalKey(targetCoverUrl);
   const seenKeys = new Set();
-  const candidates = [];
+  let candidates = [];
 
   // If primary image provided, ensure it is added first
   if (targetCoverUrl) {
@@ -340,6 +359,11 @@ export const normalizeProductImages = (images = [], mainImage = '', defaultAlt =
         publicId,
       });
     });
+  }
+
+  // If real user image(s) exist, purge any obsolete chandelier / placeholder images
+  if (candidates.some((c) => !isPlaceholder(c.url))) {
+    candidates = candidates.filter((c) => !isPlaceholder(c.url));
   }
 
   // Ensure EXACTLY one image has isCover: true
