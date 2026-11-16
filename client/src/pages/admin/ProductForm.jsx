@@ -29,6 +29,8 @@ import {
 } from '../../utils/imageCompressor';
 
 const PRESET_MEDIA_OPTIONS = [
+  { label: 'LH-218GL Gate Lamp (/products/gate-lamp/lh-218-gate-outdoor-gate-lamp.jpg)', url: '/products/gate-lamp/lh-218-gate-outdoor-gate-lamp.jpg' },
+  { label: 'LH-812/1L Hanging Lamp (/products/led-hanging-lamp/lh-812-1l-3l-led-hanging-lamp.jpg)', url: '/products/led-hanging-lamp/lh-812-1l-3l-led-hanging-lamp.jpg' },
   { label: 'Chandelier Default (/categories/chandelier.jpg)', url: '/categories/chandelier.jpg' },
   { label: 'Wall Light Default (/categories/wall.jpg)', url: '/categories/wall.jpg' },
   { label: 'Ceiling Light Default (/categories/ceiling.jpg)', url: '/categories/ceiling.jpg' },
