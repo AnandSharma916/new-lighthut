@@ -24,6 +24,7 @@ import catalogRoutes from './routes/catalogRoutes.js';
 
 import Category from './models/Category.js';
 import Admin from './models/Admin.js';
+import Product from './models/Product.js';
 import { seedDatabase } from './scripts/seedData.js';
 import { syncCatalogProducts } from './scripts/syncCatalogProducts.js';
 import { removeE27Text } from './scripts/removeE27Text.js';
@@ -50,6 +51,55 @@ const initDB = async () => {
         });
         console.log('[Server] Default admin account ready: admin@lighthut.com / admin123456');
       }
+    }
+
+    // Auto-restore correct original images for LH-218GL Gate Lamp & LH-812 Hanging Lamp
+    try {
+      await Product.updateMany(
+        { $or: [{ name: /218GL/i }, { sku: /CLASSIC DESIGN-1/i }, { name: /LH-218/i }] },
+        {
+          $set: {
+            images: [
+              {
+                url: '/products/gate-lamp/lh-218-gate-outdoor-gate-lamp.jpg',
+                alt: 'LH-218GL BLACK',
+                isCover: true,
+              },
+              {
+                url: '/products/gate-lamp/lh-218-gate-outdoor-gate-lamp-full.jpg',
+                alt: 'LH-218GL BLACK Installed View',
+                isCover: false,
+              },
+            ],
+            mainImage: '/products/gate-lamp/lh-218-gate-outdoor-gate-lamp.jpg',
+          },
+        }
+      );
+      console.log('[Server] Auto-restored LH-218GL Gate Lamp original photos.');
+
+      await Product.updateMany(
+        { $or: [{ name: /812/i }, { sku: /LH-666415-555/i }, { sku: /LH-812/i }] },
+        {
+          $set: {
+            images: [
+              {
+                url: '/products/led-hanging-lamp/lh-812-1l-3l-led-hanging-lamp.jpg',
+                alt: 'LH-812/1L LED HANGING LAMP',
+                isCover: true,
+              },
+              {
+                url: '/products/led-hanging-lamp/lh-812-1l-3l-led-hanging-lamp-full.jpg',
+                alt: 'LH-812/1L LED HANGING LAMP Installed View',
+                isCover: false,
+              },
+            ],
+            mainImage: '/products/led-hanging-lamp/lh-812-1l-3l-led-hanging-lamp.jpg',
+          },
+        }
+      );
+      console.log('[Server] Auto-restored LH-812 LED Hanging Lamp original photos.');
+    } catch (restoreErr) {
+      console.warn('[Server] Product photo restore warning:', restoreErr.message);
     }
 
     // Auto-sync subcategories, icon, and tag into existing Category records in MongoDB
