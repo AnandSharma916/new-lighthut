@@ -434,24 +434,7 @@ export const createProduct = async (req, res, next) => {
     } = req.body;
 
     const productName = (name || title || '').trim();
-    let productSku = (sku || '').trim().toUpperCase();
-
-    // Auto-generate SKU if omitted: extract model code from name instead of random numbers
-    if (!productSku) {
-      const lhMatch = productName.match(/\b(LH-[A-Za-z0-9\/-]+)/i);
-      if (lhMatch) {
-        productSku = lhMatch[1].toUpperCase();
-      } else {
-        const cleanName = productName
-          .replace(/[^\w\s-]/g, '')
-          .split(/\s+/)
-          .filter(Boolean)
-          .slice(0, 2)
-          .join('-')
-          .toUpperCase();
-        productSku = cleanName ? (cleanName.startsWith('LH-') ? cleanName : `LH-${cleanName}`) : 'LH-LUMINAIRE';
-      }
-    }
+    const productSku = (sku || '').trim().toUpperCase();
 
     let targetCategory = category;
     if (!targetCategory) {
@@ -705,6 +688,7 @@ export const updateProduct = async (req, res, next) => {
     if (shortDescription !== undefined) product.shortDescription = shortDescription;
     if (description !== undefined) product.description = description;
     if (price !== undefined) product.price = Math.max(0, Number(price) || 0);
+    if (sku !== undefined) product.sku = (sku || '').trim().toUpperCase();
 
     if (images !== undefined || mainImage !== undefined) {
       product.images = normalizeProductImages(

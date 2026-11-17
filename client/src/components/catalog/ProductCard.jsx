@@ -309,9 +309,11 @@ export const ProductCard = ({ product, hidePricing = false }) => {
 
                 <div className="p-5 flex flex-col justify-between">
                   <div>
-                    <span className="text-xs font-mono text-[#DC2626] font-semibold">
-                      SKU: {product.sku || 'LH-ARC'}
-                    </span>
+                    {product.sku && !/^LH-\d{6}-\d{3}$/i.test(product.sku) ? (
+                      <span className="text-xs font-mono text-[#DC2626] font-semibold block">
+                        SKU: {product.sku}
+                      </span>
+                    ) : null}
                     <h3 className="font-serif text-lg font-bold text-neutral-900 mt-1 leading-snug">
                       {product.name}
                     </h3>

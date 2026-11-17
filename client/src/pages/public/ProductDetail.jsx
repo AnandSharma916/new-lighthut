@@ -230,9 +230,10 @@ export const ProductDetail = () => {
 
   const images = rawImages;
   const currentImage = images[selectedImageIndex] || images[0];
+  const hasValidSku = Boolean(product?.sku && !/^LH-\d{6}-\d{3}$/i.test(product.sku.trim()));
 
   const specsList = [
-    { label: 'Model Code', value: product.sku },
+    ...(hasValidSku ? [{ label: 'Model Code', value: product.sku }] : []),
     { label: 'Category', value: product.category?.name || product.categoryName },
     { label: 'Dimensions', value: product.specifications?.dimensions },
     { label: 'Material', value: product.specifications?.material },
@@ -405,9 +406,11 @@ export const ProductDetail = () => {
 
               {/* Badges on Top */}
               <div className="absolute top-4 left-4 z-10 flex items-center gap-2">
-                <span className="text-xs font-mono font-bold px-3 py-1 rounded-lg bg-black/75 backdrop-blur-md text-red-400 border border-white/10 shadow-lg">
-                  {product.sku}
-                </span>
+                {hasValidSku && (
+                  <span className="text-xs font-mono font-bold px-3 py-1 rounded-lg bg-black/75 backdrop-blur-md text-red-400 border border-white/10 shadow-lg">
+                    {product.sku}
+                  </span>
+                )}
                 {product.isFeatured && (
                   <span className="text-xs font-bold uppercase tracking-luxury px-2.5 py-1 rounded-lg bg-[#DC2626] text-white shadow flex items-center gap-1">
                     <Sparkles className="w-3 h-3" /> Featured
@@ -528,9 +531,11 @@ export const ProductDetail = () => {
               </h1>
               
               <div className="mt-3 flex items-center gap-3 flex-wrap">
-                <span className="text-xs font-mono text-neutral-600 bg-neutral-100 px-2.5 py-1 rounded border border-neutral-200">
-                  SKU: <strong className="text-neutral-900 font-bold">{product.sku}</strong>
-                </span>
+                {hasValidSku && (
+                  <span className="text-xs font-mono text-neutral-600 bg-neutral-100 px-2.5 py-1 rounded border border-neutral-200">
+                    SKU: <strong className="text-neutral-900 font-bold">{product.sku}</strong>
+                  </span>
+                )}
                 <span className="text-xs text-emerald-700 font-medium flex items-center gap-1 bg-emerald-50 px-2.5 py-1 rounded border border-emerald-200">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                   <span>Verified Architectural Grade</span>
@@ -909,7 +914,7 @@ export const ProductDetail = () => {
       <div className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-neutral-200/90 px-4 py-3 shadow-[0_-8px_25px_rgba(0,0,0,0.1)] flex items-center justify-between gap-3">
         <div className="min-w-0">
           <div className="text-[10px] text-neutral-500 font-semibold truncate tracking-wider uppercase">
-            {product.sku || 'SKU'} • Studio Price
+            {hasValidSku ? `${product.sku} • Studio Price` : 'Studio Price'}
           </div>
           <div className="font-extrabold text-[#DC2626] text-base leading-tight font-mono">
             {formattedPrice}

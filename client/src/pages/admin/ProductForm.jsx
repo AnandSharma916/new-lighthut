@@ -26,7 +26,6 @@ import {
   compressImageFile,
   isPlaceholderPhoto,
   NEUTRAL_FALLBACK_IMAGE,
-  extractModelSku,
 } from '../../utils/imageCompressor';
 
 const PRESET_MEDIA_OPTIONS = [
@@ -160,7 +159,7 @@ export const ProductForm = () => {
             price: p.price ?? '',
             description: p.description || p.shortDescription || '',
             images: productImages,
-            sku: p.sku || '',
+            sku: p.sku && !/^LH-\d{6}-\d{3}$/i.test(p.sku) ? p.sku : '',
           });
         } else {
           addToast('Product not found.', 'error');
@@ -409,10 +408,10 @@ export const ProductForm = () => {
     try {
       setSubmitting(true);
 
-      const generatedSku =
-        formData.sku.trim() ||
-        extractModelSku(formData.name) ||
-        formData.name.trim().toUpperCase().slice(0, 20);
+      const cleanSku =
+        formData.sku && !/^LH-\d{6}-\d{3}$/i.test(formData.sku.trim())
+          ? formData.sku.trim().toUpperCase()
+          : '';
 
       // Deduplicate images and clean URLs
       const seenUrlSet = new Set();
@@ -455,7 +454,7 @@ export const ProductForm = () => {
         shortDescription: formData.description.trim().slice(0, 160),
         mainImage: coverImage,
         images: finalImagesList,
-        sku: generatedSku,
+        sku: cleanSku,
         specifications: {
           dimensions: formData.size.trim(),
           finish: formData.finish.trim(),
@@ -617,22 +616,22 @@ export const ProductForm = () => {
               </p>
             </div>
 
-            {/* SKU / Model Code */}
+            {/* SKU / Model Code (Optional) */}
             <div className="space-y-2">
               <label className="text-xs font-semibold uppercase tracking-wider text-neutral-300 flex items-center justify-between">
                 <span>SKU / Model Number</span>
-                <span className="text-[10px] text-neutral-400 font-normal lowercase">(auto if blank)</span>
+                <span className="text-[10px] text-neutral-400 font-normal lowercase">(optional - leave blank if not needed)</span>
               </label>
               <input
                 type="text"
                 name="sku"
                 value={formData.sku}
                 onChange={handleChange}
-                placeholder="e.g. LH-WL101"
+                placeholder="e.g. LH-WL101 (optional)"
                 className="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 text-white placeholder-neutral-500 focus:border-[#DC2626] focus:outline-none transition-all text-sm font-mono uppercase"
               />
               <p className="text-[11px] text-neutral-400">
-                Unique identifier for tracking and ordering.
+                Optional custom code. Leave empty if you do not want an SKU code.
               </p>
             </div>
           </div>

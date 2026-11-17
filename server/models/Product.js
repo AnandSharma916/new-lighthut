@@ -37,11 +37,9 @@ const productSchema = new mongoose.Schema(
     },
     sku: {
       type: String,
-      required: [true, 'Product SKU is required'],
-      unique: true,
-      uppercase: true,
       trim: true,
-      index: true,
+      uppercase: true,
+      default: '',
     },
     category: {
       type: mongoose.Schema.Types.ObjectId,

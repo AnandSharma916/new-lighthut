@@ -28,7 +28,6 @@ import {
   compressImageFile,
   isPlaceholderPhoto,
   NEUTRAL_FALLBACK_IMAGE,
-  extractModelSku,
 } from '../../utils/imageCompressor';
 
 const PRESET_MEDIA_OPTIONS = [
@@ -254,7 +253,7 @@ export const ProductList = () => {
 
     setForm({
       name: prod.name || prod.title || '',
-      sku: prod.sku || '',
+      sku: prod.sku && !/^LH-\d{6}-\d{3}$/i.test(prod.sku) ? prod.sku : '',
       category: prod.category?._id || prod.category || categories[0]?._id || '',
       subcategory: prod.subcategory || '',
       subcategoryName: prod.subcategoryName || '',
@@ -601,15 +600,10 @@ export const ProductList = () => {
         }
       });
 
-      const resolvedSku =
-        (form.sku || '').trim() ||
-        extractModelSku(form.name) ||
-        form.name.trim().toUpperCase().slice(0, 20);
-
       const payload = {
         name: form.name.trim(),
         title: form.name.trim(),
-        sku: resolvedSku,
+        sku: form.sku && !/^LH-\d{6}-\d{3}$/i.test(form.sku.trim()) ? form.sku.trim().toUpperCase() : '',
         category: chosenCatId,
         subcategory: (form.subcategory || '').trim().toLowerCase(),
         subcategoryName: (form.subcategoryName || '').trim(),
@@ -811,9 +805,11 @@ export const ProductList = () => {
                         >
                           {prod.name || prod.title}
                         </button>
-                        <span className="text-[10px] text-neutral-500 font-mono mt-0.5 block">
-                          SKU: {prod.sku || 'Auto'}
-                        </span>
+                        {prod.sku && !/^LH-\d{6}-\d{3}$/i.test(prod.sku) ? (
+                          <span className="text-[10px] text-neutral-400 font-mono mt-0.5 block">
+                            SKU: {prod.sku}
+                          </span>
+                        ) : null}
                       </td>
 
                       {/* 3. Category & Subcategory Badge */}
@@ -952,46 +948,19 @@ export const ProductList = () => {
                     <span>Basic Product Identity</span>
                   </div>
 
-                  {/* 1. Heading Name & SKU / Model Code */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-                    <div className="space-y-1.5 sm:col-span-2">
-                      <label className="text-xs font-semibold uppercase tracking-wider text-neutral-300 block">
-                        Product Heading Name <span className="text-[#DC2626]">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={form.name}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setForm((prev) => {
-                            const prevAuto = extractModelSku(prev.name);
-                            const shouldAutoUpdateSku = !prev.sku || prev.sku === prevAuto;
-                            return {
-                              ...prev,
-                              name: val,
-                              sku: shouldAutoUpdateSku ? extractModelSku(val) : prev.sku,
-                            };
-                          });
-                        }}
-                        placeholder="e.g. LH-920GL Gate Lamp"
-                        className="w-full px-4 py-2.5 rounded-xl bg-black/40 border border-white/15 text-white placeholder-neutral-500 focus:outline-none focus:border-[#DC2626] text-sm font-medium"
-                      />
-                    </div>
-
-                    <div className="space-y-1.5 sm:col-span-1">
-                      <label className="text-xs font-semibold uppercase tracking-wider text-neutral-300 flex items-center justify-between">
-                        <span>Model Code / SKU</span>
-                        <span className="text-[10px] text-neutral-400 font-normal lowercase">(model #)</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={form.sku || ''}
-                        onChange={(e) => setForm({ ...form, sku: e.target.value })}
-                        placeholder="e.g. LH-920GL"
-                        className="w-full px-4 py-2.5 rounded-xl bg-black/40 border border-white/15 text-white placeholder-neutral-500 focus:outline-none focus:border-[#DC2626] text-sm font-mono uppercase"
-                      />
-                    </div>
+                  {/* 1. Heading Name */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold uppercase tracking-wider text-neutral-300 block">
+                      Product Heading Name <span className="text-[#DC2626]">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={form.name}
+                      onChange={(e) => setForm({ ...form, name: e.target.value })}
+                      placeholder="e.g. Royal Waterfall Crystal Chandelier"
+                      className="w-full px-4 py-2.5 rounded-xl bg-black/40 border border-white/15 text-white placeholder-neutral-500 focus:outline-none focus:border-[#DC2626] text-sm font-medium"
+                    />
                   </div>
 
                   {/* 2. Category & Subcategory Selection */}
@@ -1028,10 +997,10 @@ export const ProductList = () => {
                     }}
                   />
 
-                  {/* 3. Product Price & Description Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {/* 3. Product Price & Optional SKU Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {/* Price Input */}
-                    <div className="space-y-1.5 sm:col-span-1">
+                    <div className="space-y-1.5">
                       <label className="text-xs font-semibold uppercase tracking-wider text-neutral-300 block">
                         Price (₹)
                       </label>
@@ -1052,19 +1021,35 @@ export const ProductList = () => {
                       <p className="text-[11px] text-neutral-400">MRP in Indian Rupees.</p>
                     </div>
 
-                    {/* Product Description */}
-                    <div className="space-y-1.5 sm:col-span-2">
-                      <label className="text-xs font-semibold uppercase tracking-wider text-neutral-300 block">
-                        Product Architectural Description
+                    {/* Optional SKU Code */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold uppercase tracking-wider text-neutral-300 flex items-center justify-between">
+                        <span>SKU / Model Number</span>
+                        <span className="text-[10px] text-neutral-400 font-normal lowercase">(optional)</span>
                       </label>
-                      <textarea
-                        rows={2}
-                        value={form.description}
-                        onChange={(e) => setForm({ ...form, description: e.target.value })}
-                        placeholder="e.g. Elegant handcrafted crystal fixture with golden canopy. Ideal for dining and living spaces."
-                        className="w-full px-4 py-2.5 rounded-xl bg-black/40 border border-white/15 text-white placeholder-neutral-500 focus:outline-none focus:border-[#DC2626] text-xs leading-relaxed resize-y"
+                      <input
+                        type="text"
+                        value={form.sku || ''}
+                        onChange={(e) => setForm({ ...form, sku: e.target.value })}
+                        placeholder="e.g. LH-920GL (optional)"
+                        className="w-full px-4 py-2.5 rounded-xl bg-black/40 border border-white/15 text-white placeholder-neutral-500 focus:outline-none focus:border-[#DC2626] text-sm font-mono uppercase"
                       />
+                      <p className="text-[11px] text-neutral-400">Leave blank if you do not want any SKU code.</p>
                     </div>
+                  </div>
+
+                  {/* Product Description */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold uppercase tracking-wider text-neutral-300 block">
+                      Product Architectural Description
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={form.description}
+                      onChange={(e) => setForm({ ...form, description: e.target.value })}
+                      placeholder="e.g. Elegant handcrafted crystal fixture with golden canopy. Ideal for dining and living spaces."
+                      className="w-full px-4 py-2.5 rounded-xl bg-black/40 border border-white/15 text-white placeholder-neutral-500 focus:outline-none focus:border-[#DC2626] text-xs leading-relaxed resize-y"
+                    />
                   </div>
                 </div>
 

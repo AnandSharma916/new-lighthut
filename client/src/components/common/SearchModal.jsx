@@ -131,9 +131,11 @@ export const SearchModal = ({ isOpen, onClose }) => {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-mono font-semibold text-[#DC2626] bg-[#DC2626]/10 px-2 py-0.5 rounded">
-                              {product.sku}
-                            </span>
+                            {product.sku && !/^LH-\d{6}-\d{3}$/i.test(product.sku) && (
+                              <span className="text-xs font-mono font-semibold text-[#DC2626] bg-[#DC2626]/10 px-2 py-0.5 rounded">
+                                {product.sku}
+                              </span>
+                            )}
                             {product.category?.name && (
                               <span className="text-xs text-neutral-500 truncate">
                                 {product.category.name}

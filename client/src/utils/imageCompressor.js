@@ -8,37 +8,6 @@ export const NEUTRAL_FALLBACK_IMAGE =
   "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='600' height='600' viewBox='0 0 600 600'><rect width='600' height='600' fill='%23111318'/><circle cx='300' cy='270' r='90' stroke='%232e3542' stroke-width='4' fill='%23171a22'/><path d='M300 180v180M210 270h180' stroke='%23475266' stroke-width='4' stroke-linecap='round'/><text x='300' y='425' fill='%239ca3af' font-family='system-ui, -apple-system, sans-serif' font-size='18' font-weight='700' text-anchor='middle' letter-spacing='3'>LIGHTHUT</text><text x='300' y='455' fill='%236b7280' font-family='system-ui, -apple-system, sans-serif' font-size='12' font-weight='500' text-anchor='middle' letter-spacing='2'>LUXURY LUMINAIRE</text></svg>";
 
 /**
- * Intelligently derives a clean, human-readable model SKU from a product name.
- * e.g. "LH-920GL Gate Lamp" -> "LH-920GL"
- * e.g. "LH-812/1L LED HANGING LAMP" -> "LH-812/1L"
- * e.g. "Royal Chandelier 501" -> "LH-ROYAL-501"
- */
-export const extractModelSku = (name = '') => {
-  if (!name || typeof name !== 'string') return '';
-  const trimmed = name.trim();
-  if (!trimmed) return '';
-
-  // Match standard LightHut prefix like LH-920GL, LH-812/1L-3L, LH-CH101, LH-172W, LH-SP101
-  const lhMatch = trimmed.match(/\b(LH-[A-Za-z0-9\/-]+)/i);
-  if (lhMatch) return lhMatch[1].toUpperCase();
-
-  // Match model codes like 920GL, CH101, 812/1L
-  const codeMatch = trimmed.match(/^([A-Za-z0-9]+-[A-Za-z0-9\/-]+)/);
-  if (codeMatch) return `LH-${codeMatch[1].toUpperCase()}`;
-
-  // Take first 1-2 words cleaned
-  const cleanWords = trimmed
-    .replace(/[^\w\s-]/g, '')
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .join('-')
-    .toUpperCase();
-
-  return cleanWords ? (cleanWords.startsWith('LH-') ? cleanWords : `LH-${cleanWords}`) : 'LH-LUMINAIRE';
-};
-
-/**
  * Checks if a given image URL is an old stock placeholder or chandelier default.
  * Returns true if it is a placeholder that should be replaced when a user uploads real photos.
  */

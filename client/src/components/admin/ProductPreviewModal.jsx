@@ -30,7 +30,7 @@ export const ProductPreviewModal = ({
 
   const title = product.title || product.name || 'Untitled Luminaire';
   const slug = product.slug || '';
-  const sku = product.sku || 'SKU-PENDING';
+  const sku = product.sku && !/^LH-\d{6}-\d{3}$/i.test(product.sku) ? product.sku : '';
   const price = Number(product.price) || 0;
   const isPublished = Boolean(product.isPublished);
 
@@ -217,7 +217,7 @@ export const ProductPreviewModal = ({
               <div className="space-y-4">
                 <div>
                   <span className="text-[10px] uppercase font-mono tracking-widest text-[#DC2626] font-semibold block mb-1">
-                    {categoryName || product.category?.name || 'Architectural Lighting'} • SKU: {sku}
+                    {categoryName || product.category?.name || 'Architectural Lighting'}{sku ? ` • SKU: ${sku}` : ''}
                   </span>
                   <h2 className="text-xl font-serif-luxury font-bold text-white tracking-wide leading-snug">
                     {title}

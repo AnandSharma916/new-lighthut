@@ -102,28 +102,24 @@ const initDB = async () => {
       console.warn('[Server] Product photo restore warning:', restoreErr.message);
     }
 
-    // Auto-heal random timestamp SKUs (e.g. LH-426162-413 -> LH-920GL)
+    // Make SKU optional: drop legacy unique index and wipe auto-generated random SKU patterns
     try {
-      await Product.updateMany(
-        { $or: [{ name: /920GL/i }, { slug: /920gl/i }, { sku: /LH-426162-413/i }] },
-        { $set: { sku: 'LH-920GL' } }
-      );
+      await Product.collection.dropIndex('sku_1');
+      console.log('[Server] Dropped legacy sku_1 unique index to allow optional empty SKUs.');
+    } catch (idxErr) {
+      // Index not found or already dropped
+    }
 
-      const randomSkuProducts = await Product.find({ sku: /^LH-\d{5,8}-\d{3,4}$/ });
-      for (const p of randomSkuProducts) {
-        const lhMatch = (p.name || '').match(/\b(LH-[A-Za-z0-9\/-]+)/i);
-        if (lhMatch) {
-          const cleanSku = lhMatch[1].toUpperCase();
-          const collision = await Product.findOne({ sku: cleanSku, _id: { $ne: p._id } });
-          if (!collision) {
-            p.sku = cleanSku;
-            await p.save();
-          }
-        }
+    try {
+      const cleaned = await Product.updateMany(
+        { sku: { $regex: /^LH-\d{6}-\d{3}$/ } },
+        { $set: { sku: '' } }
+      );
+      if (cleaned.modifiedCount > 0) {
+        console.log(`[Server] Removed auto-generated random SKUs from ${cleaned.modifiedCount} product(s).`);
       }
-      console.log('[Server] Auto-healed random timestamp SKUs.');
-    } catch (skuErr) {
-      console.warn('[Server] SKU heal warning:', skuErr.message);
+    } catch (cleanErr) {
+      console.warn('[Server] SKU cleanup warning:', cleanErr.message);
     }
 
     // Auto-sync subcategories, icon, and tag into existing Category records in MongoDB
