@@ -26,6 +26,7 @@ import {
   compressImageFile,
   isPlaceholderPhoto,
   NEUTRAL_FALLBACK_IMAGE,
+  extractModelSku,
 } from '../../utils/imageCompressor';
 
 const PRESET_MEDIA_OPTIONS = [
@@ -410,7 +411,8 @@ export const ProductForm = () => {
 
       const generatedSku =
         formData.sku.trim() ||
-        `LH-${Date.now().toString().slice(-6)}-${Math.floor(100 + Math.random() * 900)}`;
+        extractModelSku(formData.name) ||
+        formData.name.trim().toUpperCase().slice(0, 20);
 
       // Deduplicate images and clean URLs
       const seenUrlSet = new Set();

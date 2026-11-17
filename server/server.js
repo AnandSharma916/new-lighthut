@@ -102,6 +102,30 @@ const initDB = async () => {
       console.warn('[Server] Product photo restore warning:', restoreErr.message);
     }
 
+    // Auto-heal random timestamp SKUs (e.g. LH-426162-413 -> LH-920GL)
+    try {
+      await Product.updateMany(
+        { $or: [{ name: /920GL/i }, { slug: /920gl/i }, { sku: /LH-426162-413/i }] },
+        { $set: { sku: 'LH-920GL' } }
+      );
+
+      const randomSkuProducts = await Product.find({ sku: /^LH-\d{5,8}-\d{3,4}$/ });
+      for (const p of randomSkuProducts) {
+        const lhMatch = (p.name || '').match(/\b(LH-[A-Za-z0-9\/-]+)/i);
+        if (lhMatch) {
+          const cleanSku = lhMatch[1].toUpperCase();
+          const collision = await Product.findOne({ sku: cleanSku, _id: { $ne: p._id } });
+          if (!collision) {
+            p.sku = cleanSku;
+            await p.save();
+          }
+        }
+      }
+      console.log('[Server] Auto-healed random timestamp SKUs.');
+    } catch (skuErr) {
+      console.warn('[Server] SKU heal warning:', skuErr.message);
+    }
+
     // Auto-sync subcategories, icon, and tag into existing Category records in MongoDB
     for (const group of CATALOG_CATEGORY_GROUPS) {
       const cat = await Category.findOne({ slug: group.slug });

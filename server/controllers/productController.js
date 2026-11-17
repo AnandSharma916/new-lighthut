@@ -436,9 +436,21 @@ export const createProduct = async (req, res, next) => {
     const productName = (name || title || '').trim();
     let productSku = (sku || '').trim().toUpperCase();
 
-    // Auto-generate SKU if omitted so normal users don't have to enter technical codes
+    // Auto-generate SKU if omitted: extract model code from name instead of random numbers
     if (!productSku) {
-      productSku = `LH-${Date.now().toString().slice(-6)}-${Math.floor(100 + Math.random() * 900)}`;
+      const lhMatch = productName.match(/\b(LH-[A-Za-z0-9\/-]+)/i);
+      if (lhMatch) {
+        productSku = lhMatch[1].toUpperCase();
+      } else {
+        const cleanName = productName
+          .replace(/[^\w\s-]/g, '')
+          .split(/\s+/)
+          .filter(Boolean)
+          .slice(0, 2)
+          .join('-')
+          .toUpperCase();
+        productSku = cleanName ? (cleanName.startsWith('LH-') ? cleanName : `LH-${cleanName}`) : 'LH-LUMINAIRE';
+      }
     }
 
     let targetCategory = category;
