@@ -525,14 +525,26 @@ export const getCatalog = async (req, res, next) => {
     const targetSub = (sub || subcategory || '').trim().toLowerCase();
     if (targetSub && targetSub !== 'all') {
       const matchingSubCat = await Category.findOne({ slug: targetSub }).select('_id');
-      if (matchingSubCat) {
-        query.$or = [
-          { subcategory: targetSub },
-          { category: matchingSubCat._id },
-        ];
-      } else {
-        query.subcategory = targetSub;
+      const subConditions = [];
+      const cleanSub = targetSub.replace(/[-_]/g, ' ');
+
+      subConditions.push({ subcategory: new RegExp(`^${targetSub}$`, 'i') });
+      subConditions.push({ subcategory: new RegExp(`^${cleanSub}$`, 'i') });
+      subConditions.push({ subcategoryName: new RegExp(`^${cleanSub}$`, 'i') });
+
+      if (targetSub.includes('wall')) {
+        subConditions.push({ subcategory: /wall/i });
+        subConditions.push({ subcategoryName: /wall/i });
+      } else if (targetSub.includes('gate')) {
+        subConditions.push({ subcategory: /gate/i });
+        subConditions.push({ subcategoryName: /gate/i });
       }
+
+      if (matchingSubCat) {
+        subConditions.push({ category: matchingSubCat._id });
+      }
+
+      query.$or = subConditions;
     }
 
     // 3. Category Filter
@@ -633,7 +645,7 @@ export const getCatalog = async (req, res, next) => {
         break;
       case 'sortOrder':
       default:
-        sortOption = { isFeatured: -1, sortOrder: 1, createdAt: -1 };
+        sortOption = { subcategory: 1, isFeatured: -1, sortOrder: 1, createdAt: -1 };
         break;
     }
 

@@ -184,8 +184,8 @@ export const ProductCard = ({ product, hidePricing = false }) => {
       <div className="group relative flex flex-col bg-white border border-neutral-200/80 hover:border-neutral-400 rounded-2xl overflow-hidden transition-all duration-300 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-xl hover:-translate-y-1">
         
         {/* ── IMAGE WRAPPER WITH HD HOVER ── */}
-        <div className="relative aspect-[4/3] w-full overflow-hidden bg-neutral-100 block">
-          <Link to={`/product/${product.slug}`} className="absolute inset-0 block">
+        <div className="relative aspect-square w-full overflow-hidden bg-neutral-50 flex items-center justify-center p-3">
+          <Link to={`/product/${product.slug}`} className="w-full h-full flex items-center justify-center relative">
             {/* Primary HD Image */}
             <img
               src={coverImage}
@@ -194,7 +194,7 @@ export const ProductCard = ({ product, hidePricing = false }) => {
                 e.currentTarget.src = getCategoryDefaultCover(subKey || catKey);
               }}
               alt={product.name}
-              className={`w-full h-full object-cover object-center transform transition-all duration-700 ease-out filter brightness-[1.02] contrast-[1.02] ${
+              className={`max-w-full max-h-full w-auto h-auto object-contain object-center transform transition-all duration-700 ease-out filter brightness-[1.02] contrast-[1.02] ${
                 hasMultipleImages ? 'group-hover:scale-105 group-hover:opacity-0' : 'group-hover:scale-105'
               }`}
               loading="lazy"
@@ -209,7 +209,7 @@ export const ProductCard = ({ product, hidePricing = false }) => {
                   e.currentTarget.src = getCategoryDefaultCover(subKey || catKey);
                 }}
                 alt={`${product.name} alternate view`}
-                className="absolute inset-0 w-full h-full object-cover object-center transform scale-100 transition-all duration-700 ease-out opacity-0 group-hover:opacity-100 group-hover:scale-105 filter brightness-[1.02] contrast-[1.02]"
+                className="absolute inset-0 max-w-full max-h-full w-auto h-auto m-auto object-contain object-center transform scale-100 transition-all duration-700 ease-out opacity-0 group-hover:opacity-100 group-hover:scale-105 filter brightness-[1.02] contrast-[1.02]"
                 loading="lazy"
               />
             )}
@@ -290,7 +290,7 @@ export const ProductCard = ({ product, hidePricing = false }) => {
               </button>
 
               <div className="grid grid-cols-1 sm:grid-cols-2">
-                <div className="aspect-square bg-neutral-100 overflow-hidden relative">
+                <div className="aspect-square bg-neutral-50 overflow-hidden relative flex items-center justify-center p-4">
                   <img
                     src={coverImage}
                     onError={(e) => {
@@ -298,7 +298,7 @@ export const ProductCard = ({ product, hidePricing = false }) => {
                       e.currentTarget.src = getCategoryDefaultCover(subKey || catKey);
                     }}
                     alt={product.name}
-                    className="w-full h-full object-cover object-center"
+                    className="max-w-full max-h-full w-auto h-auto object-contain object-center"
                   />
                   <div className="absolute bottom-2 left-2">
                     <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-black/70 text-white backdrop-blur-md">

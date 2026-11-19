@@ -71,7 +71,20 @@ export const getProducts = async (req, res, next) => {
     // Filter by subcategory (if provided directly)
     const targetSub = (subcategory || sub || '').trim().toLowerCase();
     if (targetSub && targetSub !== 'all') {
-      query.subcategory = targetSub;
+      const cleanSub = targetSub.replace(/[-_]/g, ' ');
+      const subConditions = [
+        { subcategory: new RegExp(`^${targetSub}$`, 'i') },
+        { subcategory: new RegExp(`^${cleanSub}$`, 'i') },
+        { subcategoryName: new RegExp(`^${cleanSub}$`, 'i') },
+      ];
+      if (targetSub.includes('wall')) {
+        subConditions.push({ subcategory: /wall/i });
+        subConditions.push({ subcategoryName: /wall/i });
+      } else if (targetSub.includes('gate')) {
+        subConditions.push({ subcategory: /gate/i });
+        subConditions.push({ subcategoryName: /gate/i });
+      }
+      query.$or = query.$or ? [...query.$or, ...subConditions] : subConditions;
     }
 
     // Filter by category (can be slug or category ID)

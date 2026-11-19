@@ -320,15 +320,64 @@ export const Catalog = () => {
     setSearchParams({});
   };
 
+  const activeCatConfig = useMemo(() => {
+    return PRODUCT_CATEGORIES_DATA.find((c) => c.slug === currentCategory);
+  }, [currentCategory]);
+
+  const selectedSubDef = useMemo(() => {
+    if (!currentSub || !activeCatConfig?.sub) return null;
+    return activeCatConfig.sub.find((s) => s.slug === currentSub) || null;
+  }, [currentSub, activeCatConfig]);
+
   const [downloadingPdf, setDownloadingPdf] = useState(false);
 
-  // Printable Catalog PDF Brochure Generator for ALL Fixtures in Current Category/Filter
-  const handleDownloadCatalog = async () => {
+  // Helper: Match fixture to subcategory slug
+  const fixtureMatchesSub = (p, subSlug) => {
+    if (!subSlug) return true;
+    const s = String(p.subcategory || p.subCategory || '').toLowerCase();
+    const c = String(typeof p.category === 'string' ? p.category : p.category?.slug || p.category?.name || '').toLowerCase();
+    const n = String(p.name || '').toLowerCase();
+    const sl = String(p.slug || '').toLowerCase();
+    const target = String(subSlug).toLowerCase();
+
+    if (target.includes('gate')) {
+      return s.includes('gate') || c.includes('gate') || n.includes('gate') || sl.includes('gate');
+    }
+    if (target.includes('wall')) {
+      return s.includes('wall') || c.includes('wall') || n.includes('wall') || sl.includes('wall');
+    }
+    const cleanTarget = target.replace(/[-_]/g, ' ');
+    return (
+      s.includes(target) ||
+      s.includes(cleanTarget) ||
+      target.includes(s) ||
+      c.includes(target) ||
+      sl.includes(target) ||
+      n.includes(cleanTarget)
+    );
+  };
+
+  // Printable Catalog PDF Brochure Generator (Supports whole category or separate subcategory downloads)
+  const handleDownloadCatalog = async (subFilterOverride = null) => {
     if (downloadingPdf) return;
     setDownloadingPdf(true);
 
-    const categoryTitle = currentSub
-      ? `${activeCategoryData?.name || ''} - ${currentSub.replace(/-/g, ' ').toUpperCase()}`
+    const effectiveSub =
+      subFilterOverride === 'all'
+        ? ''
+        : subFilterOverride !== null
+        ? subFilterOverride
+        : currentSub || '';
+
+    // Subcategory display title
+    let subDisplayName = '';
+    if (effectiveSub) {
+      const subDef = activeCatConfig?.sub?.find((s) => s.slug === effectiveSub);
+      subDisplayName = subDef?.name || effectiveSub.replace(/-/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+    }
+
+    const categoryTitle = effectiveSub
+      ? `${activeCategoryData?.name || 'Architectural Lighting'} - ${subDisplayName}`
       : activeCategoryData?.name || 'All Architectural Lighting';
 
     // Image Resolver ensuring absolute URLs and robust category fallback
@@ -368,14 +417,14 @@ export const Catalog = () => {
     let fixtureList = [];
 
     try {
-      // 1. Fetch ALL products for this category/filter (up to 1000 items so page 2, page 3 are all included)
+      // 1. Fetch ALL products for this category/filter (up to 1000 items)
       const fetchParams = {
         limit: 1000,
         sort: currentSort,
         category: currentCategory !== 'all' ? currentCategory : undefined,
         search: currentSearch.trim() !== '' ? currentSearch.trim() : undefined,
         featured: currentFeatured !== '' ? currentFeatured : undefined,
-        sub: currentSub !== '' ? currentSub : undefined,
+        sub: effectiveSub || undefined,
       };
 
       const fullData = await catalogService.getCatalog(fetchParams);
@@ -401,22 +450,21 @@ export const Catalog = () => {
           return catStr === targetCat;
         });
 
-        let candidateList = masterCatMatches;
-        if (currentSub) {
-          const targetSub = currentSub.toLowerCase();
-          candidateList = masterCatMatches.filter((p) => {
-            const subStr = String(p.subcategory || p.subCategory || '').toLowerCase();
-            return subStr.includes(targetSub) || targetSub.includes(subStr);
-          });
-        }
-
-        if (candidateList.length > fixtureList.length) {
-          fixtureList = candidateList;
+        if (masterCatMatches.length > fixtureList.length) {
+          fixtureList = masterCatMatches;
         }
       }
 
       if (fixtureList.length === 0) {
         fixtureList = MASTER_PRODUCTS;
+      }
+    }
+
+    // If a specific subcategory was selected, strictly filter fixtureList
+    if (effectiveSub) {
+      const filtered = fixtureList.filter((p) => fixtureMatchesSub(p, effectiveSub));
+      if (filtered.length > 0) {
+        fixtureList = filtered;
       }
     }
 
@@ -428,45 +476,109 @@ export const Catalog = () => {
       return;
     }
 
-    const productsHtml = fixtureList
-      .map((p, idx) => {
-        const priceNum = getProductPrice(p);
-        const mrpFormatted = `₹${priceNum.toLocaleString('en-IN')}`;
-        const imgSrc = resolveProductImg(p);
+    // Single product card HTML builder
+    const renderCardHtml = (p, idx) => {
+      const priceNum = getProductPrice(p);
+      const mrpFormatted = `₹${priceNum.toLocaleString('en-IN')}`;
+      const imgSrc = resolveProductImg(p);
+      const cleanSku = p.sku && !/^LH-\d{6}-\d{3}$/i.test(p.sku) ? p.sku : '';
+      const subTag = p.subcategoryName || p.subcategory || p.categoryName || p.category?.name || activeCategoryData?.name || 'Architectural Lighting';
 
-        return `
-        <div class="product-card">
-          <div class="badge-idx">#${idx + 1}</div>
-          <div class="img-box">
-            <img 
-              src="${imgSrc}" 
-              alt="${p.name}" 
-              loading="eager"
-              crossorigin="anonymous"
-              onerror="this.onerror=null; this.src='${NEUTRAL_FALLBACK_IMAGE}';"
-            />
-          </div>
-          <div class="cat-tag">${p.categoryName || p.category?.name || activeCategoryData?.name || 'Architectural Lighting'}</div>
-          <div class="product-title">${p.name}</div>
+      return `
+      <div class="product-card">
+        <div class="badge-idx">#${idx}</div>
+        <div class="img-box">
+          <img 
+            src="${imgSrc}" 
+            alt="${p.name}" 
+            loading="eager"
+            crossorigin="anonymous"
+            onerror="this.onerror=null; this.src='${NEUTRAL_FALLBACK_IMAGE}';"
+          />
+        </div>
+        <div class="cat-tag">${subTag}</div>
+        <div class="product-title">${p.name}</div>
 
-          <div class="mrp-box">
-            <span class="mrp-badge-label">MRP:</span>
-            <span class="mrp-badge-val">${mrpFormatted}</span>
-            <span class="mrp-badge-tax">(Incl. of Taxes)</span>
-          </div>
+        <div class="mrp-box">
+          <span class="mrp-badge-label">MRP:</span>
+          <span class="mrp-badge-val">${mrpFormatted}</span>
+          <span class="mrp-badge-tax">(Incl. of Taxes)</span>
+        </div>
 
-          <div class="spec-table">
-            ${p.sku ? `<div class="spec-row"><span class="spec-lbl">SKU:</span> <strong class="spec-val-sku">${p.sku}</strong></div>` : ''}
-            ${p.specifications?.wattage ? `<div class="spec-row"><span class="spec-lbl">Wattage:</span> <span class="spec-val">${p.specifications.wattage}</span></div>` : ''}
-            ${p.specifications?.colorTemperature ? `<div class="spec-row"><span class="spec-lbl">CCT / Glow:</span> <span class="spec-val">${p.specifications.colorTemperature}</span></div>` : ''}
-            ${p.specifications?.finish ? `<div class="spec-row"><span class="spec-lbl">Finish:</span> <span class="spec-val">${p.specifications.finish}</span></div>` : ''}
-            ${p.specifications?.material ? `<div class="spec-row"><span class="spec-lbl">Material:</span> <span class="spec-val">${p.specifications.material}</span></div>` : ''}
-            ${p.specifications?.dimensions ? `<div class="spec-row"><span class="spec-lbl">Dimensions:</span> <span class="spec-val">${p.specifications.dimensions}</span></div>` : ''}
-          </div>
+        <div class="spec-table">
+          ${cleanSku ? `<div class="spec-row"><span class="spec-lbl">SKU:</span> <strong class="spec-val-sku">${cleanSku}</strong></div>` : ''}
+          ${p.specifications?.wattage ? `<div class="spec-row"><span class="spec-lbl">Wattage:</span> <span class="spec-val">${p.specifications.wattage}</span></div>` : ''}
+          ${p.specifications?.colorTemperature ? `<div class="spec-row"><span class="spec-lbl">CCT / Glow:</span> <span class="spec-val">${p.specifications.colorTemperature}</span></div>` : ''}
+          ${p.specifications?.finish ? `<div class="spec-row"><span class="spec-lbl">Finish:</span> <span class="spec-val">${p.specifications.finish}</span></div>` : ''}
+          ${p.specifications?.material ? `<div class="spec-row"><span class="spec-lbl">Material:</span> <span class="spec-val">${p.specifications.material}</span></div>` : ''}
+          ${p.specifications?.dimensions ? `<div class="spec-row"><span class="spec-lbl">Dimensions:</span> <span class="spec-val">${p.specifications.dimensions}</span></div>` : ''}
+        </div>
+      </div>
+    `;
+    };
+
+    // Subcategory Separation & Grouping (Products are NEVER mixed together)
+    let sections = [];
+    if (!effectiveSub && currentCategory === 'outdoor-light') {
+      const gateLamps = fixtureList.filter((p) => fixtureMatchesSub(p, 'gate-lamp'));
+      const wallLamps = fixtureList.filter((p) => fixtureMatchesSub(p, 'outdoor-wall-lamp') && !fixtureMatchesSub(p, 'gate-lamp'));
+      const otherLamps = fixtureList.filter((p) => !fixtureMatchesSub(p, 'gate-lamp') && !fixtureMatchesSub(p, 'outdoor-wall-lamp'));
+
+      if (gateLamps.length > 0) {
+        sections.push({ name: 'Gate Lamp Series', count: gateLamps.length, items: gateLamps });
+      }
+      if (wallLamps.length > 0) {
+        sections.push({ name: 'Outdoor Wall Lamp Series', count: wallLamps.length, items: wallLamps });
+      }
+      if (otherLamps.length > 0) {
+        sections.push({ name: 'General Outdoor Luminaires', count: otherLamps.length, items: otherLamps });
+      }
+    } else if (!effectiveSub && activeCatConfig?.sub && activeCatConfig.sub.length > 0) {
+      const assigned = new Set();
+      activeCatConfig.sub.forEach((subDef) => {
+        const matched = fixtureList.filter((p) => !assigned.has(p._id || p.slug) && fixtureMatchesSub(p, subDef.slug));
+        if (matched.length > 0) {
+          matched.forEach((p) => assigned.add(p._id || p.slug));
+          sections.push({ name: `${subDef.name} Series`, count: matched.length, items: matched });
+        }
+      });
+      const unassigned = fixtureList.filter((p) => !assigned.has(p._id || p.slug));
+      if (unassigned.length > 0) {
+        sections.push({ name: 'Additional Architectural Models', count: unassigned.length, items: unassigned });
+      }
+    }
+
+    let productsHtml = '';
+    if (sections.length > 1) {
+      let runningIdx = 0;
+      productsHtml = sections
+        .map((sec, secIdx) => {
+          const cards = sec.items
+            .map((p) => {
+              runningIdx++;
+              return renderCardHtml(p, runningIdx);
+            })
+            .join('');
+
+          return `
+            <div class="category-section-banner ${secIdx > 0 ? 'section-page-break' : ''}">
+              <div class="section-badge">COLLECTION 0${secIdx + 1}</div>
+              <div class="section-title">${sec.name.toUpperCase()}</div>
+              <div class="section-count">${sec.count} Fixtures Available</div>
+            </div>
+            <div class="grid">
+              ${cards}
+            </div>
+          `;
+        })
+        .join('');
+    } else {
+      productsHtml = `
+        <div class="grid">
+          ${fixtureList.map((p, idx) => renderCardHtml(p, idx + 1)).join('')}
         </div>
       `;
-      })
-      .join('');
+    }
 
     const htmlContent = `
       <!DOCTYPE html>
@@ -580,20 +692,62 @@ export const Catalog = () => {
             }
             .img-box {
               width: 100%;
-              height: 190px;
+              height: 230px;
               border-radius: 8px;
               overflow: hidden;
-              background: #f8fafc;
+              background: #ffffff;
               margin-bottom: 10px;
               display: flex;
               align-items: center;
               justify-content: center;
-              border: 1px solid #f1f5f9;
+              border: 1px solid #e2e8f0;
+              padding: 8px;
             }
             .img-box img {
-              width: 100%;
-              height: 100%;
-              object-fit: cover;
+              max-width: 100%;
+              max-height: 100%;
+              width: auto;
+              height: auto;
+              object-fit: contain;
+              display: block;
+              margin: auto;
+            }
+            .category-section-banner {
+              background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+              color: #ffffff;
+              border-radius: 10px;
+              padding: 12px 18px;
+              margin-top: 24px;
+              margin-bottom: 16px;
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              border-left: 5px solid #DC2626;
+            }
+            .section-page-break {
+              page-break-before: always;
+              margin-top: 32px;
+            }
+            .section-badge {
+              font-size: 9px;
+              font-weight: 800;
+              background: #DC2626;
+              color: #ffffff;
+              padding: 3px 8px;
+              border-radius: 4px;
+              letter-spacing: 0.1em;
+            }
+            .section-title {
+              font-size: 15px;
+              font-weight: 800;
+              letter-spacing: 0.02em;
+              flex: 1;
+              margin-left: 12px;
+            }
+            .section-count {
+              font-size: 11px;
+              color: #94a3b8;
+              font-weight: 600;
             }
             .cat-tag {
               font-size: 10px;
@@ -732,10 +886,8 @@ export const Catalog = () => {
             </div>
           </div>
 
-          <!-- Product Cards Grid -->
-          <div class="grid">
-            ${productsHtml}
-          </div>
+          <!-- Product Cards Grid / Grouped Sections -->
+          ${productsHtml}
 
           <!-- Document Footer -->
           <div class="footer">
@@ -882,17 +1034,18 @@ export const Catalog = () => {
 
             <div className="shrink-0 flex flex-col sm:flex-row md:flex-col items-start md:items-end gap-2.5">
               <span className="text-xs font-mono text-white bg-black/60 backdrop-blur-md border border-white/20 px-3.5 py-1.5 rounded-xl font-semibold shadow-sm">
-                {activeCategoryData.total ?? totalProducts}{' '}
-                {(activeCategoryData.total ?? totalProducts) === 1 ? 'Fixture Available' : 'Fixtures Available'}
+                {currentSub
+                  ? `${displayedProducts.length} ${displayedProducts.length === 1 ? 'Fixture in' : 'Fixtures in'} ${selectedSubDef?.name || currentSub.replace(/-/g, ' ').toUpperCase()}`
+                  : `${activeCategoryData.total ?? totalProducts} ${(activeCategoryData.total ?? totalProducts) === 1 ? 'Fixture Available' : 'Fixtures Available'}`}
               </span>
 
-              {/* Prominently Highlighted Dynamic Category Catalog PDF Button */}
+              {/* Prominently Highlighted Dynamic Category / Subcategory Catalog PDF Button */}
               <button
                 type="button"
-                onClick={handleDownloadCatalog}
+                onClick={() => handleDownloadCatalog()}
                 disabled={downloadingPdf}
                 className="relative inline-flex items-center justify-center w-full sm:w-auto gap-2.5 px-5 py-3 rounded-2xl bg-gradient-to-r from-[#DC2626] to-[#b91c1c] text-white text-xs sm:text-[13px] font-black uppercase tracking-wider shadow-[0_8px_25px_rgba(220,38,38,0.55)] border-2 border-white/60 hover:border-white hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer group ring-4 ring-[#DC2626]/30 overflow-hidden text-center disabled:opacity-75 disabled:cursor-wait"
-                title={`Download official PDF specification catalog for ${activeCategoryData.name}`}
+                title={`Download official PDF specification catalog for ${currentSub && selectedSubDef ? selectedSubDef.name : activeCategoryData.name}`}
               >
                 {/* Glowing Sheen Animation */}
                 <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none" />
@@ -900,12 +1053,55 @@ export const Catalog = () => {
                 <span className="drop-shadow font-black">
                   {downloadingPdf
                     ? 'Preparing Complete PDF...'
+                    : currentSub && selectedSubDef
+                    ? `Download ${selectedSubDef.name} Catalog (PDF)`
+                    : currentSub
+                    ? `Download ${currentSub.replace(/-/g, ' ').toUpperCase()} Catalog (PDF)`
                     : currentCategory !== 'all'
                     ? `Download ${activeCategoryData.name} Catalog (PDF)`
                     : 'Download 2026 Catalog (PDF)'}
                 </span>
               </button>
 
+              {/* Dedicated Subcategory Split PDF Buttons (e.g. Gate Lamp Only, Wall Lamp Only) */}
+              {activeCatConfig?.sub && activeCatConfig.sub.length > 0 && (
+                <div className="flex flex-wrap items-center gap-1.5 justify-start md:justify-end mt-0.5">
+                  <span className="text-[10px] font-bold text-white/90 uppercase tracking-wider bg-black/60 px-2 py-1 rounded-md border border-white/15">
+                    Separate PDF:
+                  </span>
+                  {activeCatConfig.sub.map((subItem) => {
+                    const isSubActive = currentSub === subItem.slug;
+                    return (
+                      <button
+                        key={subItem.slug}
+                        type="button"
+                        onClick={() => handleDownloadCatalog(subItem.slug)}
+                        disabled={downloadingPdf}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition-all flex items-center gap-1.5 cursor-pointer shadow-sm ${
+                          isSubActive
+                            ? 'bg-white text-[#DC2626] border-white font-black scale-102 ring-2 ring-[#DC2626]/50'
+                            : 'bg-black/60 hover:bg-black/80 text-white border-white/30 hover:border-white'
+                        }`}
+                        title={`Download official PDF specification catalog for ${subItem.name} only`}
+                      >
+                        <Download className="w-3 h-3 text-[#DC2626]" />
+                        <span>{subItem.name} Only</span>
+                      </button>
+                    );
+                  })}
+                  {currentSub && (
+                    <button
+                      type="button"
+                      onClick={() => handleDownloadCatalog('all')}
+                      disabled={downloadingPdf}
+                      className="px-2.5 py-1 rounded-lg text-xs font-bold bg-neutral-900/90 hover:bg-black text-white/90 border border-white/30 hover:border-white transition-all flex items-center gap-1 cursor-pointer"
+                      title={`Download complete ${activeCategoryData.name} catalog (All Fixtures)`}
+                    >
+                      <span>All {activeCategoryData.name}</span>
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -976,30 +1172,47 @@ export const Catalog = () => {
                 All {activeCatConfig.name}s
               </button>
 
-              {/* Each Subcategory with Real Image Thumbnail */}
+              {/* Each Subcategory with Real Image Thumbnail & Direct PDF Download Action */}
               {activeCatConfig.sub.map((subItem) => {
                 const isSubSelected = currentSub === subItem.slug;
                 return (
-                  <button
+                  <div
                     key={subItem.slug}
-                    type="button"
-                    onClick={() => updateQuery({ sub: isSubSelected ? undefined : subItem.slug })}
-                    className={`flex items-center gap-2 p-1 pr-3 rounded-xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 cursor-pointer border ${
+                    className={`flex items-center gap-1.5 p-1 pr-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 border ${
                       isSubSelected
                         ? 'bg-white border-[#DC2626] text-[#DC2626] shadow-sm ring-2 ring-[#DC2626]/20 font-bold'
                         : 'bg-white border-neutral-200 hover:border-neutral-300 text-neutral-700 hover:bg-neutral-50'
                     }`}
                   >
-                    <div className="w-6 h-6 rounded-lg overflow-hidden shrink-0 bg-neutral-100 border border-neutral-200 shadow-2xs">
-                      <img
-                        src={subItem.image}
-                        alt={subItem.name}
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                      />
-                    </div>
-                    <span>{subItem.name}</span>
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => updateQuery({ sub: isSubSelected ? undefined : subItem.slug })}
+                      className="flex items-center gap-2 cursor-pointer focus:outline-none"
+                    >
+                      <div className="w-6 h-6 rounded-lg overflow-hidden shrink-0 bg-neutral-100 border border-neutral-200 shadow-2xs">
+                        <img
+                          src={subItem.image}
+                          alt={subItem.name}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                      </div>
+                      <span>{subItem.name}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDownloadCatalog(subItem.slug);
+                      }}
+                      disabled={downloadingPdf}
+                      className="p-1 hover:bg-neutral-100 rounded-lg text-neutral-400 hover:text-[#DC2626] transition-colors cursor-pointer"
+                      title={`Download official PDF specification catalog for ${subItem.name} only`}
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 );
               })}
             </div>
