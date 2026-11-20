@@ -142,19 +142,23 @@ export const ProductCard = ({ product, hidePricing = false }) => {
     return url;
   };
 
-  const fullImageObj = product.images?.find((img) => {
-    const u = typeof img === 'string' ? img : img.url || '';
-    return u.includes('-full') || (img.alt && img.alt.toLowerCase().includes('installed'));
-  });
+  // 1. Explicit admin-chosen cover photo has top priority
+  const explicitCover =
+    product.images?.find((img) => img.isCover)?.url ||
+    product.mainImage ||
+    product.images?.[0]?.url;
+
+  // 2. Fall back to authentic full view if available
+  const fullImageObj = !explicitCover
+    ? product.images?.find((img) => {
+        const u = typeof img === 'string' ? img : img.url || '';
+        return u.includes('-full') || (img.alt && img.alt.toLowerCase().includes('installed'));
+      })
+    : null;
   const fullImageUrl = typeof fullImageObj === 'string' ? fullImageObj : fullImageObj?.url;
 
-  // Primary HD cover image (Strictly authentic lighting fixture)
-  const coverImage = toFullUrl(
-    fullImageUrl ||
-    product.images?.find((img) => img.isCover)?.url ||
-    product.images?.[0]?.url ||
-    getCategoryDefaultCover(subKey || catKey)
-  );
+  // Primary HD cover image (Strictly authentic lighting fixture, respecting admin choice)
+  const coverImage = toFullUrl(explicitCover || fullImageUrl) || getCategoryDefaultCover(subKey || catKey);
 
   // Dedicated secondary image if available, otherwise preserve exact cover image on hover
   const secondaryImageObj = product.images?.find((img) => {

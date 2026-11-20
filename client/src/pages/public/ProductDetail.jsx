@@ -202,24 +202,23 @@ export const ProductDetail = () => {
       ? product.category.toLowerCase()
       : product.category?.slug?.toLowerCase() || 'chandelier';
 
-  // Gallery shows only the product's own images, prioritizing authentic full uncropped photos
+  // Gallery shows only the product's own images, strictly respecting admin's chosen cover photo
   const rawImages = [];
   if (product.images && product.images.length > 0) {
-    const sortedImgs = [...product.images].sort((a, b) => {
-      const urlA = typeof a === 'string' ? a : a.url || '';
-      const urlB = typeof b === 'string' ? b : b.url || '';
-      const aFull = urlA.includes('-full') || (a.alt && a.alt.toLowerCase().includes('full')) ? 1 : 0;
-      const bFull = urlB.includes('-full') || (b.alt && b.alt.toLowerCase().includes('full')) ? 1 : 0;
-      return bFull - aFull;
-    });
+    const coverItem = product.images.find((img) => img.isCover);
+    const otherItems = product.images.filter((img) => !img.isCover);
+    const orderedImgs = coverItem ? [coverItem, ...otherItems] : product.images;
 
-    sortedImgs.forEach((img, i) => {
-      const url = typeof img === 'string' ? img : img.url;
+    orderedImgs.forEach((img, i) => {
+      let url = typeof img === 'string' ? img : img.url;
       if (url) {
+        if (typeof url === 'string' && url.includes('/products/') && url.endsWith('.jpg') && !url.includes('-full')) {
+          url = url.replace(/\.jpg$/, '-full.jpg');
+        }
         rawImages.push({
           url,
-          label: i === 0 ? 'Full Luminaire Specimen' : `Studio Angle ${i + 1}`,
-          tag: i === 0 ? 'Authentic Fixture' : 'Official Specimen',
+          label: i === 0 ? 'Primary Studio View' : `Studio Angle ${i + 1}`,
+          tag: i === 0 ? 'Primary Showcase' : 'Official Specimen',
           alt: `${product.name} View ${i + 1}`,
         });
       }
@@ -283,16 +282,13 @@ export const ProductDetail = () => {
   const handleDownloadSpecSheetPdf = () => {
     if (!product) return;
 
-    // Resolve full uncropped image URL
-    const fullImgObj = product.images?.find((img) => {
-      const u = typeof img === 'string' ? img : img.url || '';
-      return u.includes('-full') || (img.alt && img.alt.toLowerCase().includes('full'));
-    });
-    let rawUrl =
-      (typeof fullImgObj === 'string' ? fullImgObj : fullImgObj?.url) ||
+    // Resolve image URL (respecting admin-chosen cover photo first)
+    const explicitCover =
+      product.images?.find((img) => img.isCover)?.url ||
       currentImage?.url ||
-      CATEGORY_BANNER_MAP[catKey] ||
-      NEUTRAL_FALLBACK_IMAGE;
+      product.mainImage;
+
+    let rawUrl = explicitCover || CATEGORY_BANNER_MAP[catKey] || NEUTRAL_FALLBACK_IMAGE;
 
     if (rawUrl.includes('/products/') && rawUrl.endsWith('.jpg') && !rawUrl.includes('-full')) {
       rawUrl = rawUrl.replace(/\.jpg$/, '-full.jpg');

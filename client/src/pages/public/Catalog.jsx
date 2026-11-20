@@ -380,23 +380,26 @@ export const Catalog = () => {
       ? `${activeCategoryData?.name || 'Architectural Lighting'} - ${subDisplayName}`
       : activeCategoryData?.name || 'All Architectural Lighting';
 
-    // Image Resolver prioritizing authentic full uncropped image
+    // Image Resolver prioritizing admin chosen cover image, with authentic full uncropped fallback
     const resolveProductImg = (p) => {
-      const fullImgObj = p.images?.find((img) => {
-        const u = typeof img === 'string' ? img : img.url || '';
-        return u.includes('-full') || (img.alt && img.alt.toLowerCase().includes('installed'));
-      });
+      const explicitCover =
+        p.images?.find((img) => img.isCover)?.url ||
+        p.mainImage ||
+        p.primaryImage ||
+        p.images?.[0]?.url;
+
+      const fullImgObj = !explicitCover
+        ? p.images?.find((img) => {
+            const u = typeof img === 'string' ? img : img.url || '';
+            return u.includes('-full') || (img.alt && img.alt.toLowerCase().includes('installed'));
+          })
+        : null;
       const fullUrl = typeof fullImgObj === 'string' ? fullImgObj : fullImgObj?.url;
 
       const catKey = typeof p.category === 'string' ? p.category.toLowerCase() : p.category?.slug || '';
       const subKey = String(p.subcategory || p.subCategory || '').toLowerCase();
 
-      let rawUrl =
-        fullUrl ||
-        p.primaryImage ||
-        p.images?.find((img) => img.isCover)?.url ||
-        p.images?.[0]?.url ||
-        getCategoryDefaultCover(subKey || catKey);
+      let rawUrl = explicitCover || fullUrl || getCategoryDefaultCover(subKey || catKey);
 
       if (!rawUrl) rawUrl = NEUTRAL_FALLBACK_IMAGE;
 
