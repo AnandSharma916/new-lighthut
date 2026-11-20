@@ -132,15 +132,39 @@ export const ProductCard = ({ product, hidePricing = false }) => {
 
   const subKey = String(product.subcategory || product.subCategory || '').toLowerCase();
 
+  // Prioritize authentic full uncropped image for complete luminaire display
+  const toFullUrl = (url) => {
+    if (!url || typeof url !== 'string') return url;
+    if (url.includes('-full')) return url;
+    if (url.includes('/products/') && url.endsWith('.jpg')) {
+      return url.replace(/\.jpg$/, '-full.jpg');
+    }
+    return url;
+  };
+
+  const fullImageObj = product.images?.find((img) => {
+    const u = typeof img === 'string' ? img : img.url || '';
+    return u.includes('-full') || (img.alt && img.alt.toLowerCase().includes('installed'));
+  });
+  const fullImageUrl = typeof fullImageObj === 'string' ? fullImageObj : fullImageObj?.url;
+
   // Primary HD cover image (Strictly authentic lighting fixture)
-  const coverImage =
+  const coverImage = toFullUrl(
+    fullImageUrl ||
     product.images?.find((img) => img.isCover)?.url ||
     product.images?.[0]?.url ||
-    getCategoryDefaultCover(subKey || catKey);
+    getCategoryDefaultCover(subKey || catKey)
+  );
 
   // Dedicated secondary image if available, otherwise preserve exact cover image on hover
-  const hasMultipleImages = Boolean(product.images?.[1]?.url);
-  const hoverImage = hasMultipleImages ? product.images[1].url : coverImage;
+  const secondaryImageObj = product.images?.find((img) => {
+    const u = typeof img === 'string' ? img : img.url || '';
+    return u && u !== coverImage;
+  });
+  const hoverImage = secondaryImageObj
+    ? (typeof secondaryImageObj === 'string' ? secondaryImageObj : secondaryImageObj.url)
+    : coverImage;
+  const hasMultipleImages = Boolean(secondaryImageObj);
 
   const categoryTitle =
     product.categoryName ||
@@ -165,6 +189,7 @@ export const ProductCard = ({ product, hidePricing = false }) => {
   })();
 
   const originalPrice = Math.round(numericPrice * 1.35);
+  const savingsPercent = originalPrice > numericPrice ? Math.round(((originalPrice - numericPrice) / originalPrice) * 100) : 0;
   const formattedPrice = `₹${numericPrice.toLocaleString('en-IN')}`;
   const formattedOriginalPrice = `₹${originalPrice.toLocaleString('en-IN')}`;
 
@@ -241,13 +266,22 @@ export const ProductCard = ({ product, hidePricing = false }) => {
               </p>
             ) : null}
 
-            {/* 4. Product Price Display */}
+            {/* 4. Product Price & Accurately Calculated Savings Display */}
             {!hidePricing && (
-              <div className="mt-2.5 flex items-baseline gap-1.5">
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-neutral-400">Price:</span>
+              <div className="mt-2.5 flex items-baseline gap-2 flex-wrap">
                 <span className="font-mono text-base font-extrabold text-[#DC2626] tracking-tight">
                   {formattedPrice}
                 </span>
+                {originalPrice > numericPrice && (
+                  <>
+                    <span className="text-xs text-neutral-400 line-through font-mono">
+                      {formattedOriginalPrice}
+                    </span>
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      {savingsPercent}% OFF
+                    </span>
+                  </>
+                )}
               </div>
             )}
           </div>

@@ -53,7 +53,7 @@ const initDB = async () => {
       }
     }
 
-    // Auto-restore correct original images for LH-218GL Gate Lamp & LH-812 Hanging Lamp
+    // Auto-restore correct uncropped full photos for LH-218GL Gate Lamp & LH-812 Hanging Lamp
     try {
       await Product.updateMany(
         { $or: [{ name: /218GL/i }, { sku: /CLASSIC DESIGN-1/i }, { name: /LH-218/i }] },
@@ -61,21 +61,21 @@ const initDB = async () => {
           $set: {
             images: [
               {
-                url: '/products/gate-lamp/lh-218-gate-outdoor-gate-lamp.jpg',
-                alt: 'LH-218GL BLACK',
+                url: '/products/gate-lamp/lh-218-gate-outdoor-gate-lamp-full.jpg',
+                alt: 'LH-218GL BLACK Full View',
                 isCover: true,
               },
               {
-                url: '/products/gate-lamp/lh-218-gate-outdoor-gate-lamp-full.jpg',
-                alt: 'LH-218GL BLACK Installed View',
+                url: '/products/gate-lamp/lh-218-gate-outdoor-gate-lamp.jpg',
+                alt: 'LH-218GL BLACK Secondary View',
                 isCover: false,
               },
             ],
-            mainImage: '/products/gate-lamp/lh-218-gate-outdoor-gate-lamp.jpg',
+            mainImage: '/products/gate-lamp/lh-218-gate-outdoor-gate-lamp-full.jpg',
           },
         }
       );
-      console.log('[Server] Auto-restored LH-218GL Gate Lamp original photos.');
+      console.log('[Server] Auto-restored LH-218GL Gate Lamp full un-cropped photos.');
 
       await Product.updateMany(
         { $or: [{ name: /812/i }, { sku: /LH-666415-555/i }, { sku: /LH-812/i }] },
@@ -83,21 +83,37 @@ const initDB = async () => {
           $set: {
             images: [
               {
-                url: '/products/led-hanging-lamp/lh-812-1l-3l-led-hanging-lamp.jpg',
-                alt: 'LH-812/1L LED HANGING LAMP',
+                url: '/products/led-hanging-lamp/lh-812-1l-3l-led-hanging-lamp-full.jpg',
+                alt: 'LH-812/1L LED HANGING LAMP Full View',
                 isCover: true,
               },
               {
-                url: '/products/led-hanging-lamp/lh-812-1l-3l-led-hanging-lamp-full.jpg',
-                alt: 'LH-812/1L LED HANGING LAMP Installed View',
+                url: '/products/led-hanging-lamp/lh-812-1l-3l-led-hanging-lamp.jpg',
+                alt: 'LH-812/1L LED HANGING LAMP Secondary View',
                 isCover: false,
               },
             ],
-            mainImage: '/products/led-hanging-lamp/lh-812-1l-3l-led-hanging-lamp.jpg',
+            mainImage: '/products/led-hanging-lamp/lh-812-1l-3l-led-hanging-lamp-full.jpg',
           },
         }
       );
-      console.log('[Server] Auto-restored LH-812 LED Hanging Lamp original photos.');
+      console.log('[Server] Auto-restored LH-812 LED Hanging Lamp full un-cropped photos.');
+
+      // Automatically prioritize full un-cropped images (-full.jpg) as main cover image across all products
+      const productsWithFull = await Product.find({ 'images.url': { $regex: /-full\./i } });
+      for (const p of productsWithFull) {
+        const fullImg = p.images.find((img) => img.url && img.url.includes('-full'));
+        if (fullImg) {
+          p.images.forEach((img) => {
+            img.isCover = img.url === fullImg.url;
+          });
+          p.mainImage = fullImg.url;
+          await p.save();
+        }
+      }
+      if (productsWithFull.length > 0) {
+        console.log(`[Server] Prioritized full un-cropped images for ${productsWithFull.length} products.`);
+      }
     } catch (restoreErr) {
       console.warn('[Server] Product photo restore warning:', restoreErr.message);
     }

@@ -202,16 +202,24 @@ export const ProductDetail = () => {
       ? product.category.toLowerCase()
       : product.category?.slug?.toLowerCase() || 'chandelier';
 
-  // Gallery shows only the product's own images
+  // Gallery shows only the product's own images, prioritizing authentic full uncropped photos
   const rawImages = [];
   if (product.images && product.images.length > 0) {
-    product.images.forEach((img, i) => {
+    const sortedImgs = [...product.images].sort((a, b) => {
+      const urlA = typeof a === 'string' ? a : a.url || '';
+      const urlB = typeof b === 'string' ? b : b.url || '';
+      const aFull = urlA.includes('-full') || (a.alt && a.alt.toLowerCase().includes('full')) ? 1 : 0;
+      const bFull = urlB.includes('-full') || (b.alt && b.alt.toLowerCase().includes('full')) ? 1 : 0;
+      return bFull - aFull;
+    });
+
+    sortedImgs.forEach((img, i) => {
       const url = typeof img === 'string' ? img : img.url;
       if (url) {
         rawImages.push({
           url,
-          label: i === 0 ? 'Primary Studio View' : `Studio Angle ${i + 1}`,
-          tag: 'Official Specimen',
+          label: i === 0 ? 'Full Luminaire Specimen' : `Studio Angle ${i + 1}`,
+          tag: i === 0 ? 'Authentic Fixture' : 'Official Specimen',
           alt: `${product.name} View ${i + 1}`,
         });
       }
@@ -263,9 +271,319 @@ export const ProductDetail = () => {
     if (cat.includes('table')) return 3999 + (seed % 6) * 600;
     return 2999 + (seed % 8) * 500;
   })();
-  const originalPrice = Math.round(numericPrice * 1.35);
+  const originalPrice = product.originalPrice && Number(product.originalPrice) > numericPrice
+    ? Number(product.originalPrice)
+    : Math.round(numericPrice * 1.35);
+  const savingsPercentage = originalPrice > numericPrice
+    ? Math.round(((originalPrice - numericPrice) / originalPrice) * 100)
+    : 0;
   const formattedPrice = `₹${numericPrice.toLocaleString('en-IN')}`;
   const formattedOriginalPrice = `₹${originalPrice.toLocaleString('en-IN')}`;
+
+  const handleDownloadSpecSheetPdf = () => {
+    if (!product) return;
+
+    // Resolve full uncropped image URL
+    const fullImgObj = product.images?.find((img) => {
+      const u = typeof img === 'string' ? img : img.url || '';
+      return u.includes('-full') || (img.alt && img.alt.toLowerCase().includes('full'));
+    });
+    let rawUrl =
+      (typeof fullImgObj === 'string' ? fullImgObj : fullImgObj?.url) ||
+      currentImage?.url ||
+      CATEGORY_BANNER_MAP[catKey] ||
+      NEUTRAL_FALLBACK_IMAGE;
+
+    if (rawUrl.includes('/products/') && rawUrl.endsWith('.jpg') && !rawUrl.includes('-full')) {
+      rawUrl = rawUrl.replace(/\.jpg$/, '-full.jpg');
+    }
+
+    const fullImageUrl =
+      rawUrl.startsWith('http://') || rawUrl.startsWith('https://') || rawUrl.startsWith('data:')
+        ? rawUrl
+        : `${window.location.origin}${rawUrl.startsWith('/') ? '' : '/'}${rawUrl}`;
+
+    const printWin = window.open('', '_blank');
+    if (!printWin) {
+      window.print();
+      return;
+    }
+
+    const categoryDisplayName = product.category?.name || product.categoryName || 'Architectural Lighting';
+    const subDisplayName = product.subcategory || product.subCategory || '';
+    const dateStr = new Date().toLocaleDateString('en-IN', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+
+    const specsRows = specsList
+      .map(
+        (s) => `
+      <div style="display:flex; justify-content:space-between; padding:7px 12px; border-bottom:1px solid #e2e8f0; font-size:12px;">
+        <span style="color:#64748b; font-weight:600;">${s.label}</span>
+        <span style="color:#0f172a; font-weight:700; text-align:right;">${s.value}</span>
+      </div>
+    `
+      )
+      .join('');
+
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>${product.name} - Architectural Spec Sheet | Light-Hut</title>
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 12mm;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #0f172a;
+      background: #ffffff;
+      padding: 10px;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #dc2626;
+      margin-bottom: 16px;
+    }
+    .brand-title {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #0f172a;
+    }
+    .brand-tagline {
+      font-size: 10px;
+      color: #64748b;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+    .doc-badge {
+      text-align: right;
+    }
+    .doc-pill {
+      display: inline-block;
+      background: #dc2626;
+      color: #fff;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 4px;
+      margin-bottom: 3px;
+    }
+    .layout-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 18px;
+    }
+    .image-container {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      height: 360px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+    }
+    .image-container img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+    .info-container {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .category-sub {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: #dc2626;
+      margin-bottom: 4px;
+    }
+    .product-title {
+      font-size: 20px;
+      font-weight: 800;
+      color: #0f172a;
+      line-height: 1.25;
+      margin-bottom: 8px;
+    }
+    .sku-badge {
+      display: inline-block;
+      font-family: monospace;
+      font-size: 11px;
+      font-weight: 700;
+      color: #334155;
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      padding: 3px 8px;
+      border-radius: 6px;
+      margin-bottom: 12px;
+    }
+    .price-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .price-now {
+      font-size: 22px;
+      font-weight: 800;
+      color: #dc2626;
+      font-family: monospace;
+    }
+    .price-mrp {
+      font-size: 13px;
+      color: #94a3b8;
+      text-decoration: line-through;
+      font-family: monospace;
+    }
+    .save-badge {
+      background: #ecfdf5;
+      color: #047857;
+      border: 1px solid #a7f3d0;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-left: auto;
+    }
+    .specs-card {
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .footer {
+      border-top: 1px solid #e2e8f0;
+      padding-top: 10px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      color: #64748b;
+    }
+    #loading-toast {
+      position: fixed;
+      top: 15px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #0f172a;
+      color: #ffffff;
+      padding: 8px 18px;
+      border-radius: 30px;
+      font-size: 12px;
+      font-weight: 600;
+      z-index: 99999;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    }
+    @media print {
+      #loading-toast { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div id="loading-toast">⏳ Verifying high-res image: 100% complete. Preparing Spec Sheet...</div>
+  
+  <div class="header">
+    <div>
+      <div class="brand-title">Light-Hut</div>
+      <div class="brand-tagline">Architectural & Luxury Decorative Lighting</div>
+    </div>
+    <div class="doc-badge">
+      <div class="doc-pill">Official Spec Sheet</div>
+      <div style="font-size: 10px; color: #64748b;">Generated: ${dateStr}</div>
+    </div>
+  </div>
+
+  <div class="layout-grid">
+    <div class="image-container">
+      <img id="main-spec-img" src="${fullImageUrl}" alt="${product.name}" />
+    </div>
+
+    <div class="info-container">
+      <div>
+        <div class="category-sub">${categoryDisplayName}${subDisplayName ? ' • ' + subDisplayName : ''}</div>
+        <h1 class="product-title">${product.name}</h1>
+        ${hasValidSku ? `<div class="sku-badge">SKU: ${product.sku}</div>` : ''}
+        
+        <div class="price-box">
+          <span style="font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: 700;">Studio Price:</span>
+          <span class="price-now">${formattedPrice}</span>
+          ${
+            originalPrice > numericPrice
+              ? `
+            <span class="price-mrp">${formattedOriginalPrice}</span>
+            <span class="save-badge">Save ${savingsPercentage}%</span>
+          `
+              : ''
+          }
+        </div>
+
+        <p style="font-size: 12px; line-height: 1.5; color: #475569; margin-bottom: 12px;">
+          ${product.shortDescription || product.description || 'Premium architectural lighting luminaire engineered for luxury residences and commercial projects.'}
+        </p>
+      </div>
+
+      <div style="font-size: 11px; color: #64748b; background: #f8fafc; padding: 8px 12px; border-radius: 6px; border: 1px solid #f1f5f9;">
+        ✓ Verified Architectural Grade &bull; Complete Luminaire Assembly &bull; Ready for Showroom Dispatch
+      </div>
+    </div>
+  </div>
+
+  <div class="specs-card">
+    <div style="background: #f1f5f9; padding: 8px 12px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #334155;">
+      Technical Specifications
+    </div>
+    ${specsRows}
+  </div>
+
+  <div class="footer" style="margin-top: 18px;">
+    <div>Light-Hut Lighting Studio &bull; lighthutdecorativedlh@gmail.com &bull; www.light-hut.com</div>
+    <div>Official Product Catalog Sheet</div>
+  </div>
+
+  <script>
+    var img = document.getElementById('main-spec-img');
+    var toast = document.getElementById('loading-toast');
+    function doPrint() {
+      if (toast) toast.style.display = 'none';
+      setTimeout(function() {
+        window.print();
+      }, 300);
+    }
+    if (img.complete && img.naturalHeight !== 0) {
+      doPrint();
+    } else {
+      img.onload = doPrint;
+      img.onerror = doPrint;
+      setTimeout(doPrint, 2500);
+    }
+  <\/script>
+</body>
+</html>`;
+
+    printWin.document.open();
+    printWin.document.write(html);
+    printWin.document.close();
+  };
 
   const handlePrevImage = () => {
     setSelectedImageIndex((prev) => (prev - 1 + images.length) % images.length);
@@ -381,7 +699,7 @@ export const ProductDetail = () => {
             {/* Primary Main Image Showcase with Prev/Next Navigation Controls */}
             <div
               onClick={() => setLightboxOpen(true)}
-              className={`relative aspect-[4/3] rounded-3xl overflow-hidden bg-neutral-100 border transition-all duration-500 shadow-md group cursor-zoom-in ${
+              className={`relative aspect-square sm:aspect-[4/3] rounded-3xl overflow-hidden bg-neutral-50 border transition-all duration-500 shadow-md group cursor-zoom-in flex items-center justify-center p-3 sm:p-4 ${
                 isNightMode
                   ? 'border-amber-400/50 shadow-[0_10px_35px_rgba(217,119,6,0.15)] ring-2 ring-amber-400/20'
                   : 'border-neutral-200 hover:border-neutral-300'
@@ -394,7 +712,7 @@ export const ProductDetail = () => {
                   e.currentTarget.src = CATEGORY_BANNER_MAP[catKey] || NEUTRAL_FALLBACK_IMAGE;
                 }}
                 alt={currentImage.alt || product.name}
-                className={`w-full h-full object-cover object-center transition-all duration-700 group-hover:scale-105 ${
+                className={`max-w-full max-h-full object-contain object-center transition-all duration-500 group-hover:scale-105 ${
                   isNightMode ? 'filter brightness-95 contrast-110 saturate-110' : ''
                 }`}
               />
@@ -552,12 +870,16 @@ export const ProductDetail = () => {
                     <span className="text-3xl font-extrabold text-[#DC2626] tracking-tight">
                       {formattedPrice}
                     </span>
-                    <span className="text-sm text-neutral-400 line-through">
-                      {formattedOriginalPrice}
-                    </span>
-                    <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                      Save 35%
-                    </span>
+                    {originalPrice > numericPrice && (
+                      <>
+                        <span className="text-sm text-neutral-400 line-through font-mono">
+                          {formattedOriginalPrice}
+                        </span>
+                        <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                          Save {savingsPercentage}%
+                        </span>
+                      </>
+                    )}
                   </div>
                   <span className="text-[10.5px] text-neutral-500 mt-1 block">
                     Inclusive of all taxes • Ready for Showroom Dispatch
@@ -572,7 +894,7 @@ export const ProductDetail = () => {
               </p>
             )}
 
-            {/* Action Buttons: Inquiry & Official Email */}
+            {/* Action Buttons: Inquiry, Official Email, Download Spec Sheet (PDF) */}
             <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
               <button
                 type="button"
@@ -592,17 +914,15 @@ export const ProductDetail = () => {
                 <span>Email Us</span>
               </a>
 
-              {product.pdfUrl && (
-                <a
-                  href={product.pdfUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="btn-outline-gold py-3.5 px-5 rounded-xl text-xs font-bold uppercase tracking-luxury flex items-center justify-center gap-2 transition-all"
-                >
-                  <Download className="w-4 h-4" />
-                  <span>Download Spec Sheet</span>
-                </a>
-              )}
+              <button
+                type="button"
+                onClick={handleDownloadSpecSheetPdf}
+                className="btn-outline-gold py-3.5 px-5 rounded-xl text-xs font-bold uppercase tracking-luxury flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm hover:shadow text-center"
+                title="Download Official Spec Sheet / Catalog PDF"
+              >
+                <Download className="w-4 h-4 text-[#DC2626]" />
+                <span>Download Spec Sheet (PDF)</span>
+              </button>
             </div>
 
             {/* Technical Specifications Table */}

@@ -380,18 +380,29 @@ export const Catalog = () => {
       ? `${activeCategoryData?.name || 'Architectural Lighting'} - ${subDisplayName}`
       : activeCategoryData?.name || 'All Architectural Lighting';
 
-    // Image Resolver ensuring absolute URLs and robust category fallback
+    // Image Resolver prioritizing authentic full uncropped image
     const resolveProductImg = (p) => {
+      const fullImgObj = p.images?.find((img) => {
+        const u = typeof img === 'string' ? img : img.url || '';
+        return u.includes('-full') || (img.alt && img.alt.toLowerCase().includes('installed'));
+      });
+      const fullUrl = typeof fullImgObj === 'string' ? fullImgObj : fullImgObj?.url;
+
       const catKey = typeof p.category === 'string' ? p.category.toLowerCase() : p.category?.slug || '';
       const subKey = String(p.subcategory || p.subCategory || '').toLowerCase();
 
       let rawUrl =
+        fullUrl ||
         p.primaryImage ||
         p.images?.find((img) => img.isCover)?.url ||
         p.images?.[0]?.url ||
         getCategoryDefaultCover(subKey || catKey);
 
       if (!rawUrl) rawUrl = NEUTRAL_FALLBACK_IMAGE;
+
+      if (rawUrl.includes('/products/') && rawUrl.endsWith('.jpg') && !rawUrl.includes('-full')) {
+        rawUrl = rawUrl.replace(/\.jpg$/, '-full.jpg');
+      }
 
       if (rawUrl.startsWith('http://') || rawUrl.startsWith('https://') || rawUrl.startsWith('data:')) {
         return rawUrl;
@@ -476,10 +487,13 @@ export const Catalog = () => {
       return;
     }
 
-    // Single product card HTML builder
+    // Single product card HTML builder with accurately calculated savings percentage
     const renderCardHtml = (p, idx) => {
       const priceNum = getProductPrice(p);
-      const mrpFormatted = `₹${priceNum.toLocaleString('en-IN')}`;
+      const originalPrice = Math.round(priceNum * 1.35);
+      const savingsPercent = originalPrice > priceNum ? Math.round(((originalPrice - priceNum) / originalPrice) * 100) : 0;
+      const mrpFormatted = `₹${originalPrice.toLocaleString('en-IN')}`;
+      const offerPriceFormatted = `₹${priceNum.toLocaleString('en-IN')}`;
       const imgSrc = resolveProductImg(p);
       const cleanSku = p.sku && !/^LH-\d{6}-\d{3}$/i.test(p.sku) ? p.sku : '';
       const subTag = p.subcategoryName || p.subcategory || p.categoryName || p.category?.name || activeCategoryData?.name || 'Architectural Lighting';
@@ -500,9 +514,14 @@ export const Catalog = () => {
         <div class="product-title">${p.name}</div>
 
         <div class="mrp-box">
-          <span class="mrp-badge-label">MRP:</span>
-          <span class="mrp-badge-val">${mrpFormatted}</span>
-          <span class="mrp-badge-tax">(Incl. of Taxes)</span>
+          <div style="display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap;">
+            <span class="mrp-badge-label">Price:</span>
+            <span class="mrp-badge-val">${offerPriceFormatted}</span>
+            <span style="font-size: 11px; text-decoration: line-through; color: #94a3b8; font-family: monospace;">${mrpFormatted}</span>
+          </div>
+          <span style="font-size: 10px; font-weight: 800; background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 1.5px 6px; border-radius: 4px; margin-left: auto;">
+            Save ${savingsPercent}%
+          </span>
         </div>
 
         <div class="spec-table">
@@ -925,8 +944,9 @@ export const Catalog = () => {
 
                 function checkItem() {
                   loaded++;
+                  var percent = Math.round((loaded / total) * 100);
                   if (statusEl && !printed) {
-                    statusEl.textContent = '⏳ Loading images (' + loaded + '/' + total + ')...';
+                    statusEl.textContent = '⏳ Verifying & loading full images: ' + percent + '% (' + loaded + '/' + total + ' complete)...';
                   }
                   if (loaded >= total) {
                     triggerPrint();
