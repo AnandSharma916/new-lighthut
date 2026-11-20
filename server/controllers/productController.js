@@ -446,7 +446,7 @@ export const createProduct = async (req, res, next) => {
       seoDescription,
     } = req.body;
 
-    const productName = (name || title || '').trim();
+    const productName = (name || title || '').trim() || 'New Luminaire';
     let productSku = (sku || '').trim().toUpperCase();
 
     let targetCategory = category;
@@ -456,13 +456,6 @@ export const createProduct = async (req, res, next) => {
       if (firstCat) {
         targetCategory = firstCat._id;
       }
-    }
-
-    if (!productName || !targetCategory) {
-      return res.status(400).json({
-        success: false,
-        message: 'Product Heading/Name is required.',
-      });
     }
 
     // Verify category exists or fallback to first available (accepts ObjectId, slug, or name)

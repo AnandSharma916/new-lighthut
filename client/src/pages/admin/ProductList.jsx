@@ -148,12 +148,11 @@ export const ProductList = () => {
 
   // Open Modal to Add New Product
   const handleOpenAdd = () => {
-    const defaultCat = categories[0]?._id || '';
     setEditingProduct(null);
     setForm({
       name: '',
       sku: '',
-      category: defaultCat,
+      category: '',
       subcategory: '',
       subcategoryName: '',
       description: '',
@@ -541,15 +540,12 @@ export const ProductList = () => {
   const handleSave = async (e) => {
     e.preventDefault();
 
-    if (!form.name.trim()) {
-      addToast('Please enter the Product Heading / Name.', 'error');
-      return;
-    }
+    const productName = form.name.trim() || 'New Luminaire';
 
     try {
       setSavingProduct(true);
 
-      const chosenCatId = form.category || categories[0]?._id;
+      const chosenCatId = form.category || categories[0]?._id || '';
 
       // Handle images: deduplicate, clean URLs, and ensure valid cover photo
       const seenUrlSet = new Set();
@@ -951,11 +947,10 @@ export const ProductList = () => {
                   {/* 1. Heading Name */}
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold uppercase tracking-wider text-neutral-300 block">
-                      Product Heading Name <span className="text-[#DC2626]">*</span>
+                      Product Heading Name <span className="text-[11px] text-neutral-500 font-normal lowercase">(optional)</span>
                     </label>
                     <input
                       type="text"
-                      required
                       value={form.name}
                       onChange={(e) => setForm({ ...form, name: e.target.value })}
                       placeholder="e.g. Royal Waterfall Crystal Chandelier"

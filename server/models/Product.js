@@ -23,7 +23,7 @@ const productSchema = new mongoose.Schema(
   {
     name: {
       type: String,
-      required: [true, 'Product name is required'],
+      default: 'New Luminaire',
       trim: true,
       maxlength: [180, 'Product name cannot exceed 180 characters'],
     },
@@ -44,7 +44,7 @@ const productSchema = new mongoose.Schema(
     category: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Category',
-      required: [true, 'Product must belong to a category'],
+      required: false,
       index: true,
     },
     subcategory: {

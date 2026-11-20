@@ -87,13 +87,6 @@ export const ProductForm = () => {
         const res = await categoryService.getCategories({ admin: 'true' });
         if (res.success && res.categories) {
           setCategories(res.categories);
-          // Default to first category if creating a new product
-          if (!isEditMode && res.categories.length > 0) {
-            setFormData((prev) => ({
-              ...prev,
-              category: prev.category || res.categories[0]._id,
-            }));
-          }
         }
       } catch (err) {
         console.error('Failed to load categories:', err);
@@ -395,15 +388,8 @@ export const ProductForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.name.trim()) {
-      addToast('Please enter the Product Heading / Name.', 'error');
-      return;
-    }
-
-    if (!formData.category) {
-      addToast('Please select a Category.', 'error');
-      return;
-    }
+    const productName = formData.name.trim() || 'New Luminaire';
+    const targetCategory = formData.category || (categories[0]?._id || '');
 
     try {
       setSubmitting(true);
@@ -535,11 +521,11 @@ export const ProductForm = () => {
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="bg-[#14171d] border border-white/10 rounded-2xl p-6 sm:p-8 shadow-xl space-y-6">
           
-          {/* 1. Heading Name / Product Name */}
+          {/* 1. Heading Name / Product Name (Optional) */}
           <div className="space-y-2">
             <label className="text-xs font-semibold uppercase tracking-wider text-neutral-300 flex items-center gap-1.5">
               <span>Heading Name / Product Title</span>
-              <span className="text-[#DC2626]">*</span>
+              <span className="text-[11px] text-neutral-500 font-normal lowercase">(optional)</span>
             </label>
             <input
               type="text"
@@ -547,11 +533,10 @@ export const ProductForm = () => {
               value={formData.name}
               onChange={handleChange}
               placeholder="e.g. Royal Waterfall Crystal Chandelier"
-              required
               className="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 text-white placeholder-neutral-500 focus:border-[#DC2626] focus:outline-none transition-all text-sm font-medium"
             />
             <p className="text-[11px] text-neutral-400">
-              The main product title displayed on the catalog and showroom cards.
+              The main product title displayed on the catalog and showroom cards (Optional).
             </p>
           </div>
 
@@ -849,7 +834,7 @@ export const ProductForm = () => {
               <label className="text-xs font-semibold uppercase tracking-wider text-neutral-300 flex items-center gap-1.5">
                 <ImageIcon className="w-3.5 h-3.5 text-[#DC2626]" />
                 <span>Product Photos / Gallery</span>
-                <span className="text-[#DC2626]">*</span>
+                <span className="text-[11px] text-neutral-500 font-normal lowercase">(optional)</span>
               </label>
               <span className="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-white/5 border border-white/10 text-neutral-400">
                 {formData.images.length} {formData.images.length === 1 ? 'photo' : 'photos'} added

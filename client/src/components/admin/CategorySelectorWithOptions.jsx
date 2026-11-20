@@ -22,7 +22,7 @@ export const CategorySelectorWithOptions = ({
           <label className="text-xs font-semibold uppercase tracking-wider text-neutral-300 flex items-center gap-1.5">
             <Layers className="w-3.5 h-3.5 text-[#DC2626]" />
             <span>Product Category</span>
-            <span className="text-[#DC2626]">*</span>
+            <span className="text-[11px] text-neutral-500 font-normal lowercase">(optional)</span>
           </label>
           <span className="text-[10px] text-neutral-400 font-mono">Step 1</span>
         </div>
@@ -32,11 +32,10 @@ export const CategorySelectorWithOptions = ({
           value={selectedCategoryId}
           onChange={(e) => onSelectCategory(e.target.value)}
           disabled={disabled}
-          required
           className="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 text-white focus:border-[#DC2626] focus:outline-none transition-all text-sm font-medium cursor-pointer"
         >
-          <option value="" disabled className="bg-[#14171d] text-neutral-500">
-            Select a category...
+          <option value="" className="bg-[#14171d] text-neutral-400">
+            -- Choose a category (Optional) --
           </option>
           {categories.map((cat) => (
             <option key={cat._id} value={cat._id} className="bg-[#14171d] text-white">
