@@ -447,7 +447,7 @@ export const createProduct = async (req, res, next) => {
     } = req.body;
 
     const productName = (name || title || '').trim();
-    const productSku = (sku || '').trim().toUpperCase();
+    let productSku = (sku || '').trim().toUpperCase();
 
     let targetCategory = category;
     if (!targetCategory) {
@@ -516,12 +516,14 @@ export const createProduct = async (req, res, next) => {
         .join(' ');
     }
 
-    // Check SKU uniqueness; if exists, append random suffix
+    // Check SKU uniqueness only if SKU is provided
     let finalSku = productSku;
-    let skuCounter = 1;
-    while (await Product.findOne({ sku: finalSku })) {
-      finalSku = `${productSku}-${skuCounter}`;
-      skuCounter++;
+    if (finalSku) {
+      let skuCounter = 1;
+      while (await Product.findOne({ sku: finalSku })) {
+        finalSku = `${productSku}-${skuCounter}`;
+        skuCounter++;
+      }
     }
     productSku = finalSku;
 
