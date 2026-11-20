@@ -408,8 +408,50 @@ export const OurInstagramShowcaseSection = () => {
 
   const instagramUrl = settings?.socialLinks?.instagram || 'https://www.instagram.com/lighthutdecorativesolutions/';
 
-  const row1Doubled = [...INSTAGRAM_POSTS_ROW1, ...INSTAGRAM_POSTS_ROW1];
-  const row2Doubled = [...INSTAGRAM_POSTS_ROW2, ...INSTAGRAM_POSTS_ROW2];
+  const renderCard = (post, keyPrefix, idx) => (
+    <div
+      key={`${keyPrefix}-${post.id}-${idx}`}
+      onClick={() => setSelectedPost(post)}
+      className="group relative w-[160px] sm:w-[210px] md:w-[245px] aspect-[9/15] rounded-sm sm:rounded-md overflow-hidden bg-neutral-900 shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-2xl cursor-pointer transition-all duration-500 shrink-0 border border-neutral-300/80 hover:-translate-y-1.5"
+    >
+      <InstagramImage post={post} />
+
+      {/* Top Instagram badge */}
+      <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between z-10 pointer-events-none">
+        <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-black/50 backdrop-blur-xs text-white text-[10px] font-medium border border-white/10">
+          <div className="w-3.5 h-3.5 rounded-full bg-gradient-to-tr from-amber-400 to-rose-500 p-[1px]">
+            <div className="w-full h-full bg-white rounded-full flex items-center justify-center">
+              <Instagram className="w-2.5 h-2.5 text-rose-600" />
+            </div>
+          </div>
+          <LightHut className="text-white text-[10px]" />
+        </div>
+
+        {post.type === 'reel' && (
+          <div className="w-6 h-6 rounded-full bg-black/50 backdrop-blur-xs text-white flex items-center justify-center border border-white/10">
+            <Play className="w-2.5 h-2.5 fill-white" />
+          </div>
+        )}
+      </div>
+
+      {/* Bottom subtle permanent gradient */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent opacity-60 group-hover:opacity-0 transition-opacity duration-300 pointer-events-none" />
+
+      {/* Interactive Hover Reveal with Instagram Details */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/60 to-black/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-4 sm:p-5 flex flex-col justify-end text-left pointer-events-none">
+        <p className="text-white/95 text-[11px] sm:text-xs leading-relaxed line-clamp-3 mb-3">
+          {post.caption}
+        </p>
+
+        <div className="flex items-center justify-end text-white/90 text-xs pt-2 border-t border-white/20">
+          <span className="text-[10px] uppercase font-bold tracking-wider text-amber-300 flex items-center gap-1">
+            <span>View</span>
+            <ExternalLink className="w-3 h-3" />
+          </span>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <section className="py-12 sm:py-16 lg:py-20 bg-neutral-50 text-neutral-900 border-b border-neutral-200/80 overflow-hidden select-none">
@@ -453,103 +495,23 @@ export const OurInstagramShowcaseSection = () => {
         <div className="absolute top-0 bottom-0 left-0 w-12 sm:w-24 bg-gradient-to-r from-neutral-50 via-neutral-50/80 to-transparent z-10 pointer-events-none" />
         <div className="absolute top-0 bottom-0 right-0 w-12 sm:w-24 bg-gradient-to-l from-neutral-50 via-neutral-50/80 to-transparent z-10 pointer-events-none" />
 
-        {/* Row 1: Scrolling Right */}
-        <div className="overflow-hidden flex">
-          <div className="animate-marquee-right flex gap-3 sm:gap-4 pl-4">
-            {row1Doubled.map((post, idx) => (
-              <div
-                key={`ir1-${post.id}-${idx}`}
-                onClick={() => setSelectedPost(post)}
-                className="group relative w-[160px] sm:w-[210px] md:w-[245px] aspect-[9/15] rounded-sm sm:rounded-md overflow-hidden bg-neutral-900 shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-2xl cursor-pointer transition-all duration-500 shrink-0 border border-neutral-300/80 hover:-translate-y-1.5"
-              >
-                <InstagramImage post={post} />
-
-                {/* Top Instagram badge */}
-                <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between z-10 pointer-events-none">
-                  <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-black/50 backdrop-blur-xs text-white text-[10px] font-medium border border-white/10">
-                    <div className="w-3.5 h-3.5 rounded-full bg-gradient-to-tr from-amber-400 to-rose-500 p-[1px]">
-                      <div className="w-full h-full bg-white rounded-full flex items-center justify-center">
-                        <Instagram className="w-2.5 h-2.5 text-rose-600" />
-                      </div>
-                    </div>
-                    <LightHut className="text-white text-[10px]" />
-                  </div>
-
-                  {post.type === 'reel' && (
-                    <div className="w-6 h-6 rounded-full bg-black/50 backdrop-blur-xs text-white flex items-center justify-center border border-white/10">
-                      <Play className="w-2.5 h-2.5 fill-white" />
-                    </div>
-                  )}
-                </div>
-
-                {/* Bottom subtle permanent gradient */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent opacity-60 group-hover:opacity-0 transition-opacity duration-300 pointer-events-none" />
-
-                {/* Interactive Hover Reveal with Instagram Details */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/60 to-black/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-4 sm:p-5 flex flex-col justify-end text-left pointer-events-none">
-                  <p className="text-white/95 text-[11px] sm:text-xs leading-relaxed line-clamp-3 mb-3">
-                    {post.caption}
-                  </p>
-
-                  <div className="flex items-center justify-end text-white/90 text-xs pt-2 border-t border-white/20">
-                    <span className="text-[10px] uppercase font-bold tracking-wider text-amber-300 flex items-center gap-1">
-                      <span>View</span>
-                      <ExternalLink className="w-3 h-3" />
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))}
+        {/* Row 1: Continuous Seamless Scrolling Left to Right */}
+        <div className="overflow-hidden w-full flex">
+          <div className="animate-marquee-right flex shrink-0 gap-3 sm:gap-4 pr-3 sm:pr-4">
+            {INSTAGRAM_POSTS_ROW1.map((post, idx) => renderCard(post, 'r1-a', idx))}
+          </div>
+          <div className="animate-marquee-right flex shrink-0 gap-3 sm:gap-4 pr-3 sm:pr-4" aria-hidden="true">
+            {INSTAGRAM_POSTS_ROW1.map((post, idx) => renderCard(post, 'r1-b', idx))}
           </div>
         </div>
 
-        {/* Row 2: Scrolling Left */}
-        <div className="overflow-hidden flex">
-          <div className="animate-marquee-left flex gap-3 sm:gap-4 pl-4">
-            {row2Doubled.map((post, idx) => (
-              <div
-                key={`ir2-${post.id}-${idx}`}
-                onClick={() => setSelectedPost(post)}
-                className="group relative w-[160px] sm:w-[210px] md:w-[245px] aspect-[9/15] rounded-sm sm:rounded-md overflow-hidden bg-neutral-900 shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-2xl cursor-pointer transition-all duration-500 shrink-0 border border-neutral-300/80 hover:-translate-y-1.5"
-              >
-                <InstagramImage post={post} />
-
-                {/* Top Instagram badge */}
-                <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between z-10 pointer-events-none">
-                  <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-black/50 backdrop-blur-xs text-white text-[10px] font-medium border border-white/10">
-                    <div className="w-3.5 h-3.5 rounded-full bg-gradient-to-tr from-amber-400 to-rose-500 p-[1px]">
-                      <div className="w-full h-full bg-white rounded-full flex items-center justify-center">
-                        <Instagram className="w-2.5 h-2.5 text-rose-600" />
-                      </div>
-                    </div>
-                    <LightHut className="text-white text-[10px]" />
-                  </div>
-
-                  {post.type === 'reel' && (
-                    <div className="w-6 h-6 rounded-full bg-black/50 backdrop-blur-xs text-white flex items-center justify-center border border-white/10">
-                      <Play className="w-2.5 h-2.5 fill-white" />
-                    </div>
-                  )}
-                </div>
-
-                {/* Bottom subtle permanent gradient */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent opacity-60 group-hover:opacity-0 transition-opacity duration-300 pointer-events-none" />
-
-                {/* Interactive Hover Reveal with Instagram Details */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/60 to-black/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-4 sm:p-5 flex flex-col justify-end text-left pointer-events-none">
-                  <p className="text-white/95 text-[11px] sm:text-xs leading-relaxed line-clamp-3 mb-3">
-                    {post.caption}
-                  </p>
-
-                  <div className="flex items-center justify-end text-white/90 text-xs pt-2 border-t border-white/20">
-                    <span className="text-[10px] uppercase font-bold tracking-wider text-amber-300 flex items-center gap-1">
-                      <span>View</span>
-                      <ExternalLink className="w-3 h-3" />
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))}
+        {/* Row 2: Continuous Seamless Scrolling Right to Left */}
+        <div className="overflow-hidden w-full flex">
+          <div className="animate-marquee-left flex shrink-0 gap-3 sm:gap-4 pr-3 sm:pr-4">
+            {INSTAGRAM_POSTS_ROW2.map((post, idx) => renderCard(post, 'r2-a', idx))}
+          </div>
+          <div className="animate-marquee-left flex shrink-0 gap-3 sm:gap-4 pr-3 sm:pr-4" aria-hidden="true">
+            {INSTAGRAM_POSTS_ROW2.map((post, idx) => renderCard(post, 'r2-b', idx))}
           </div>
         </div>
       </div>

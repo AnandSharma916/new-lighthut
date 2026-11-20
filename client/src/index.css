@@ -254,39 +254,38 @@
 /* ── Seamless Multi-Row Marquee Animations ── */
 @keyframes marqueeScrollLeft {
   0% {
-    transform: translateX(0);
+    transform: translate3d(0, 0, 0);
   }
   100% {
-    transform: translateX(-50%);
+    transform: translate3d(-100%, 0, 0);
   }
 }
 
 @keyframes marqueeScrollRight {
   0% {
-    transform: translateX(-50%);
+    transform: translate3d(-100%, 0, 0);
   }
   100% {
-    transform: translateX(0);
+    transform: translate3d(0, 0, 0);
   }
 }
 
 .animate-marquee-left {
   display: flex;
+  flex-shrink: 0;
   width: max-content;
   will-change: transform;
-  animation: marqueeScrollLeft 50s linear infinite;
+  transform: translate3d(0, 0, 0);
+  animation: marqueeScrollLeft 60s linear infinite;
 }
 
 .animate-marquee-right {
   display: flex;
+  flex-shrink: 0;
   width: max-content;
   will-change: transform;
-  animation: marqueeScrollRight 55s linear infinite;
-}
-
-.marquee-container:hover .animate-marquee-left,
-.marquee-container:hover .animate-marquee-right {
-  animation-play-state: paused;
+  transform: translate3d(0, 0, 0);
+  animation: marqueeScrollRight 65s linear infinite;
 }
 
 /* Diagonal Luxury Glass Shine Reflection */
