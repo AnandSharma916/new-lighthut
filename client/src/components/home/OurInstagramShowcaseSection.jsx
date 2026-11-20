@@ -490,6 +490,39 @@ export const OurInstagramShowcaseSection = () => {
       </div>
 
       {/* ── Continuous Dual-Row Instagram Feed Marquee ── */}
+      <style>{`
+        @keyframes marqueeL2R {
+          0% {
+            transform: translateX(-100%);
+          }
+          100% {
+            transform: translateX(0%);
+          }
+        }
+        @keyframes marqueeR2L {
+          0% {
+            transform: translateX(0%);
+          }
+          100% {
+            transform: translateX(-100%);
+          }
+        }
+        .lh-marquee-l2r {
+          display: flex !important;
+          flex-shrink: 0 !important;
+          width: max-content !important;
+          will-change: transform;
+          animation: marqueeL2R 50s linear infinite !important;
+        }
+        .lh-marquee-r2l {
+          display: flex !important;
+          flex-shrink: 0 !important;
+          width: max-content !important;
+          will-change: transform;
+          animation: marqueeR2L 50s linear infinite !important;
+        }
+      `}</style>
+
       <div className="marquee-container space-y-3 sm:space-y-4 relative w-full overflow-hidden">
         {/* Soft edge blur gradient masks */}
         <div className="absolute top-0 bottom-0 left-0 w-12 sm:w-24 bg-gradient-to-r from-neutral-50 via-neutral-50/80 to-transparent z-10 pointer-events-none" />
@@ -497,20 +530,34 @@ export const OurInstagramShowcaseSection = () => {
 
         {/* Row 1: Continuous Seamless Scrolling Left to Right */}
         <div className="overflow-hidden w-full flex">
-          <div className="animate-marquee-right flex shrink-0 gap-3 sm:gap-4 pr-3 sm:pr-4">
+          <div
+            className="lh-marquee-l2r flex shrink-0 gap-3 sm:gap-4 pr-3 sm:pr-4"
+            style={{ animationPlayState: selectedPost ? 'paused' : 'running' }}
+          >
             {INSTAGRAM_POSTS_ROW1.map((post, idx) => renderCard(post, 'r1-a', idx))}
           </div>
-          <div className="animate-marquee-right flex shrink-0 gap-3 sm:gap-4 pr-3 sm:pr-4" aria-hidden="true">
+          <div
+            className="lh-marquee-l2r flex shrink-0 gap-3 sm:gap-4 pr-3 sm:pr-4"
+            aria-hidden="true"
+            style={{ animationPlayState: selectedPost ? 'paused' : 'running' }}
+          >
             {INSTAGRAM_POSTS_ROW1.map((post, idx) => renderCard(post, 'r1-b', idx))}
           </div>
         </div>
 
         {/* Row 2: Continuous Seamless Scrolling Right to Left */}
         <div className="overflow-hidden w-full flex">
-          <div className="animate-marquee-left flex shrink-0 gap-3 sm:gap-4 pr-3 sm:pr-4">
+          <div
+            className="lh-marquee-r2l flex shrink-0 gap-3 sm:gap-4 pr-3 sm:pr-4"
+            style={{ animationPlayState: selectedPost ? 'paused' : 'running' }}
+          >
             {INSTAGRAM_POSTS_ROW2.map((post, idx) => renderCard(post, 'r2-a', idx))}
           </div>
-          <div className="animate-marquee-left flex shrink-0 gap-3 sm:gap-4 pr-3 sm:pr-4" aria-hidden="true">
+          <div
+            className="lh-marquee-r2l flex shrink-0 gap-3 sm:gap-4 pr-3 sm:pr-4"
+            aria-hidden="true"
+            style={{ animationPlayState: selectedPost ? 'paused' : 'running' }}
+          >
             {INSTAGRAM_POSTS_ROW2.map((post, idx) => renderCard(post, 'r2-b', idx))}
           </div>
         </div>
