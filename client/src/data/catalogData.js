@@ -125,6 +125,7 @@ export const MASTER_CATEGORIES = [
     subcategories: [
       { name: 'Gate Lamp', slug: 'gate-lamp', count: 25, image: '/categories/outdoor-light.jpg' },
       { name: 'Wall Lamp', slug: 'outdoor-wall-lamp', count: 22, image: '/hero-outdoor.jpg' },
+      { name: 'Hanging Lamp', slug: 'outdoor-hanging-lamp', count: 0, image: '/categories/outdoor-light.jpg' },
     ],
   },
 

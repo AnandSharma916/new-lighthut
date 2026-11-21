@@ -290,6 +290,16 @@ const seedAll = async (isStandalone = false) => {
         seoTitle: 'Outdoor Wall Lamps | LightHut',
         seoDescription: 'Weatherproof outdoor wall lights for facades, porches, and garden areas.',
       },
+      {
+        name: 'Outdoor Hanging Lamp',
+        slug: 'outdoor-hanging-lamp',
+        description: 'Weatherproof outdoor hanging lamps and exterior pendants for porches, gazebos, and entrance canopies.',
+        image: '/categories/outdoor-light.jpg',
+        sortOrder: 53,
+        isActive: true,
+        seoTitle: 'Outdoor Hanging Lamps | LightHut',
+        seoDescription: 'Weatherproof IP-rated outdoor hanging lamps and pendants.',
+      },
       // ── 7. TABLE LAMP ────────────────────────────────────
       {
         name: 'Table Lamp',

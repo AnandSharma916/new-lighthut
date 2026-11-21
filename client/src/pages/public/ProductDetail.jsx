@@ -56,6 +56,7 @@ const CATEGORY_BANNER_MAP = {
   'outdoor-light': '/hero-outdoor.jpg',
   'gate-lamp': '/hero-outdoor.jpg',
   'outdoor-wall-lamp': '/categories/outdoor-light.jpg',
+  'outdoor-hanging-lamp': '/categories/outdoor-light.jpg',
   outdoor: '/hero-outdoor.jpg',
   'table-lamp': '/banner-bedroom.jpg',
   'dining-table-lamp': '/banner-amalfi.jpg',

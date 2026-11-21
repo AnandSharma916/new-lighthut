@@ -87,6 +87,7 @@ export const CATALOG_CATEGORY_DEFINITIONS = [
     subcategories: [
       { name: 'Gate Lamp', slug: 'gate-lamp', image: '/categories/outdoor-light.jpg' },
       { name: 'Wall Lamp', slug: 'outdoor-wall-lamp', image: '/hero-outdoor.jpg' },
+      { name: 'Hanging Lamp', slug: 'outdoor-hanging-lamp', image: '/categories/outdoor-light.jpg' },
     ],
   },
   {

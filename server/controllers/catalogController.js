@@ -210,6 +210,12 @@ export const CATALOG_CATEGORY_GROUPS = [
         image: '/hero-outdoor.jpg',
         desc: 'IP65 Die-Cast Exterior Sconces',
       },
+      {
+        name: 'Hanging Lamp',
+        slug: 'outdoor-hanging-lamp',
+        image: '/categories/outdoor-light.jpg',
+        desc: 'IP65 Suspended Exterior Lanterns',
+      },
     ],
     previewGallery: [
       { url: '/categories/outdoor-light.jpg', title: 'Heritage Gate Pillar Lantern', link: '/catalog?category=outdoor-light' },

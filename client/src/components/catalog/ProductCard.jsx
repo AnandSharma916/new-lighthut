@@ -40,6 +40,7 @@ const CATEGORY_HOVER_MAP = {
   'outdoor-light': '/categories/outdoor-light.jpg',
   'gate-lamp': '/categories/outdoor-light.jpg',
   'outdoor-wall-lamp': '/hero-outdoor.jpg',
+  'outdoor-hanging-lamp': '/categories/outdoor-light.jpg',
   'table-lamp': '/categories/table-lamp.jpg',
   'floor-lamp': '/categories/floor-lamp.jpg',
   'led-filament-bulb': '/categories/led-filament-bulb.jpg',

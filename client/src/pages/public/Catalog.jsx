@@ -346,6 +346,9 @@ export const Catalog = () => {
     if (target.includes('wall')) {
       return s.includes('wall') || c.includes('wall') || n.includes('wall') || sl.includes('wall');
     }
+    if (target.includes('hanging') || target.includes('pendant')) {
+      return s.includes('hanging') || s.includes('pendant') || c.includes('hanging') || n.includes('hanging') || sl.includes('hanging');
+    }
     const cleanTarget = target.replace(/[-_]/g, ' ');
     return (
       s.includes(target) ||
@@ -544,13 +547,17 @@ export const Catalog = () => {
     if (!effectiveSub && currentCategory === 'outdoor-light') {
       const gateLamps = fixtureList.filter((p) => fixtureMatchesSub(p, 'gate-lamp'));
       const wallLamps = fixtureList.filter((p) => fixtureMatchesSub(p, 'outdoor-wall-lamp') && !fixtureMatchesSub(p, 'gate-lamp'));
-      const otherLamps = fixtureList.filter((p) => !fixtureMatchesSub(p, 'gate-lamp') && !fixtureMatchesSub(p, 'outdoor-wall-lamp'));
+      const hangingLamps = fixtureList.filter((p) => fixtureMatchesSub(p, 'outdoor-hanging-lamp') && !fixtureMatchesSub(p, 'gate-lamp') && !fixtureMatchesSub(p, 'outdoor-wall-lamp'));
+      const otherLamps = fixtureList.filter((p) => !fixtureMatchesSub(p, 'gate-lamp') && !fixtureMatchesSub(p, 'outdoor-wall-lamp') && !fixtureMatchesSub(p, 'outdoor-hanging-lamp'));
 
       if (gateLamps.length > 0) {
         sections.push({ name: 'Gate Lamp Series', count: gateLamps.length, items: gateLamps });
       }
       if (wallLamps.length > 0) {
         sections.push({ name: 'Outdoor Wall Lamp Series', count: wallLamps.length, items: wallLamps });
+      }
+      if (hangingLamps.length > 0) {
+        sections.push({ name: 'Outdoor Hanging Lamp Series', count: hangingLamps.length, items: hangingLamps });
       }
       if (otherLamps.length > 0) {
         sections.push({ name: 'General Outdoor Luminaires', count: otherLamps.length, items: otherLamps });

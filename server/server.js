@@ -98,6 +98,21 @@ const initDB = async () => {
             }));
             changed = true;
           }
+        } else if (group.subcategories && group.subcategories.length > 0) {
+          for (const sub of group.subcategories) {
+            const exists = cat.subcategories.some((s) => s.slug === sub.slug);
+            if (!exists) {
+              cat.subcategories.push({
+                name: sub.name,
+                slug: sub.slug,
+                image: sub.image || group.image,
+                desc: sub.desc || '',
+                sortOrder: cat.subcategories.length,
+                isActive: true,
+              });
+              changed = true;
+            }
+          }
         }
         if (changed) {
           await cat.save();
