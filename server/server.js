@@ -119,6 +119,29 @@ const initDB = async () => {
         }
       }
     }
+
+    // Ensure standalone Outdoor Hanging Lamp category exists for direct category queries
+    try {
+      const existingHangingCat = await Category.findOne({ slug: 'outdoor-hanging-lamp' });
+      if (!existingHangingCat) {
+        await Category.create({
+          name: 'Outdoor Hanging Lamp',
+          slug: 'outdoor-hanging-lamp',
+          icon: '🌿',
+          tag: 'Suspended Exterior Weatherproof Fixtures',
+          description: 'Weatherproof outdoor hanging lamps and exterior pendants for porches, gazebos, and entrance canopies.',
+          image: '/categories/outdoor-light.jpg',
+          sortOrder: 53,
+          isActive: true,
+          seoTitle: 'Outdoor Hanging Lamps | LightHut',
+          seoDescription: 'Weatherproof IP-rated outdoor hanging lamps and pendants.',
+          subcategories: [],
+        });
+        console.log('[Server] Created standalone Outdoor Hanging Lamp category in MongoDB.');
+      }
+    } catch (hangingCatErr) {
+      console.warn('[Server] Outdoor Hanging Lamp standalone creation notice:', hangingCatErr.message);
+    }
   } catch (err) {
     console.warn('[Server] Auto-seed/sync check notice:', err.message);
   }
