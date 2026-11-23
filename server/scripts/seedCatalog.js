@@ -27,6 +27,7 @@ export const CATALOG_CATEGORY_DEFINITIONS = [
     subcategories: [
       { name: 'Led Hanging Lamp', slug: 'led-hanging-lamp', image: '/categories/led-hanging-lamp.jpg' },
       { name: 'Hanging Lamp', slug: 'classic-hanging-lamp', image: '/categories/classic-hanging-lamp.jpg' },
+      { name: 'LED Profile Pendant', slug: 'led-profile-pendant', image: '/categories/profile-chandelier.jpg' },
     ],
   },
   {

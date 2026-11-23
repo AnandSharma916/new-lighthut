@@ -346,6 +346,9 @@ export const Catalog = () => {
     if (target.includes('wall')) {
       return s.includes('wall') || c.includes('wall') || n.includes('wall') || sl.includes('wall');
     }
+    if (target.includes('profile')) {
+      return s.includes('profile') || c.includes('profile') || n.includes('profile') || sl.includes('profile');
+    }
     if (target.includes('hanging') || target.includes('pendant')) {
       return s.includes('hanging') || s.includes('pendant') || c.includes('hanging') || n.includes('hanging') || sl.includes('hanging');
     }

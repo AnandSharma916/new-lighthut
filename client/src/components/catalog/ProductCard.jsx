@@ -22,6 +22,7 @@ const CATEGORY_HOVER_MAP = {
   'pendant-lamp': '/categories/pendant-lamp.jpg',
   'led-hanging-lamp': '/categories/led-hanging-lamp.jpg',
   'classic-hanging-lamp': '/categories/classic-hanging-lamp.jpg',
+  'led-profile-pendant': '/categories/profile-chandelier.jpg',
   'chandelier': '/categories/chandelier.jpg',
   'led-chandelier': '/categories/chandelier.jpg',
   'e14-chandelier': '/categories/e14-chandelier.jpg',

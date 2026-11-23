@@ -28,6 +28,7 @@ const CATEGORY_BANNER_MAP = {
   'pendant-lamp': '/hero-pendant.jpg',
   'led-hanging-lamp': '/hero-pendant.jpg',
   'classic-hanging-lamp': '/categories/pendant-lamp.jpg',
+  'led-profile-pendant': '/hero-pendant.jpg',
   pendant: '/hero-pendant.jpg',
   'wall-lamp': '/hero-wall-lamp.jpg',
   'led-wall-lamp': '/hero-wall-lamp.jpg',

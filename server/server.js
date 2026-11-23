@@ -142,6 +142,29 @@ const initDB = async () => {
     } catch (hangingCatErr) {
       console.warn('[Server] Outdoor Hanging Lamp standalone creation notice:', hangingCatErr.message);
     }
+
+    // Ensure standalone LED Profile Pendant category exists for direct category queries
+    try {
+      const existingProfilePendantCat = await Category.findOne({ slug: 'led-profile-pendant' });
+      if (!existingProfilePendantCat) {
+        await Category.create({
+          name: 'LED Profile Pendant',
+          slug: 'led-profile-pendant',
+          icon: '🔆',
+          tag: 'Architectural Linear & Geometric Suspensions',
+          description: 'Contemporary LED linear profile pendants and geometric architectural suspension lights for offices, dining, and open ceilings.',
+          image: '/categories/profile-chandelier.jpg',
+          sortOrder: 13,
+          isActive: true,
+          seoTitle: 'LED Profile Pendants | LightHut',
+          seoDescription: 'Architectural LED linear and geometric profile pendant lighting fixtures.',
+          subcategories: [],
+        });
+        console.log('[Server] Created standalone LED Profile Pendant category in MongoDB.');
+      }
+    } catch (profilePendantCatErr) {
+      console.warn('[Server] LED Profile Pendant standalone creation notice:', profilePendantCatErr.message);
+    }
   } catch (err) {
     console.warn('[Server] Auto-seed/sync check notice:', err.message);
   }

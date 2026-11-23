@@ -48,6 +48,7 @@ export const MASTER_CATEGORIES = [
     subcategories: [
       { name: 'LED Hanging Lamp', slug: 'led-hanging-lamp', count: 35, image: '/categories/led-hanging-lamp.jpg' },
       { name: 'Hanging Lamp', slug: 'classic-hanging-lamp', count: 52, image: '/categories/classic-hanging-lamp.jpg' },
+      { name: 'LED Profile Pendant', slug: 'led-profile-pendant', count: 0, image: '/categories/profile-chandelier.jpg' },
     ],
   },
 

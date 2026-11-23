@@ -116,6 +116,16 @@ const seedAll = async (isStandalone = false) => {
         seoTitle: 'Hanging Lamps | LightHut',
         seoDescription: 'Socket pendant lamps compatible with decorative filament bulbs.',
       },
+      {
+        name: 'LED Profile Pendant',
+        slug: 'led-profile-pendant',
+        description: 'Contemporary LED linear profile pendants and geometric architectural suspension lights.',
+        image: '/categories/profile-chandelier.jpg',
+        sortOrder: 13,
+        isActive: true,
+        seoTitle: 'LED Profile Pendants | LightHut',
+        seoDescription: 'Architectural LED linear and geometric profile pendant lighting fixtures.',
+      },
       // ── 3. CHANDELIER ────────────────────────────────────
       {
         name: 'Chandelier',

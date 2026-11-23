@@ -56,6 +56,12 @@ export const PRODUCT_CATEGORIES_DATA = [
         image: '/categories/classic-hanging-lamp.jpg',
         desc: 'Mouth-Blown Fluted Glass Drops',
       },
+      {
+        name: 'LED Profile Pendant',
+        slug: 'led-profile-pendant',
+        image: '/categories/profile-chandelier.jpg',
+        desc: 'Architectural Linear & Geometric Profiles',
+      },
     ],
     previewGallery: [
       { url: '/categories/led-hanging-lamp.jpg', title: 'LH-PL101 Cone Pendant', link: '/catalog?category=pendant-lamp' },
