@@ -349,6 +349,9 @@ export const Catalog = () => {
     if (target.includes('profile')) {
       return s.includes('profile') || c.includes('profile') || n.includes('profile') || sl.includes('profile');
     }
+    if (target.includes('classic') && target.includes('chandelier')) {
+      return s.includes('classic') || s.includes('led-chandelier') || c.includes('classic') || n.includes('classic') || sl.includes('classic') || sl.includes('led-chandelier');
+    }
     if (target.includes('hanging') || target.includes('pendant')) {
       return s.includes('hanging') || s.includes('pendant') || c.includes('hanging') || n.includes('hanging') || sl.includes('hanging');
     }

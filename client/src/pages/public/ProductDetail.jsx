@@ -33,6 +33,7 @@ import { MASTER_PRODUCTS } from '../../data/catalogData';
 
 const CATEGORY_BANNER_MAP = {
   chandelier: '/hero-chandelier.jpg',
+  'classic-chandelier': '/hero-chandelier.jpg',
   'led-chandelier': '/hero-chandelier.jpg',
   'e14-chandelier': '/categories/chandelier.jpg',
   'profile-chandelier': '/hero-chandelier.jpg',

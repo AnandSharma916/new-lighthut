@@ -79,10 +79,10 @@ export const PRODUCT_CATEGORIES_DATA = [
     count: 12,
     sub: [
       {
-        name: 'Led Chandelier',
-        slug: 'led-chandelier',
+        name: 'Classic Chandelier',
+        slug: 'classic-chandelier',
         image: '/categories/chandelier.jpg',
-        desc: 'Architectural Geometric Rings',
+        desc: 'Architectural Geometric Rings & Heritage Centerpieces',
       },
       {
         name: 'E14 Chandelier',

@@ -99,6 +99,19 @@ const initDB = async () => {
             changed = true;
           }
         } else if (group.subcategories && group.subcategories.length > 0) {
+          // If this is the chandelier category, migrate any legacy Led Chandelier subcategory
+          if (cat.slug === 'chandelier') {
+            const legacyLedChandelier = cat.subcategories.find(
+              (s) => s.slug === 'led-chandelier' || s.name.toLowerCase() === 'led chandelier'
+            );
+            if (legacyLedChandelier) {
+              legacyLedChandelier.name = 'Classic Chandelier';
+              legacyLedChandelier.slug = 'classic-chandelier';
+              legacyLedChandelier.desc = 'Architectural Geometric Rings & Heritage Centerpieces';
+              changed = true;
+            }
+          }
+
           for (const sub of group.subcategories) {
             const exists = cat.subcategories.some((s) => s.slug === sub.slug);
             if (!exists) {
@@ -118,6 +131,46 @@ const initDB = async () => {
           await cat.save();
         }
       }
+    }
+
+    // Auto-migrate standalone Led Chandelier to Classic Chandelier
+    try {
+      const existingLedChandelierCat = await Category.findOne({ slug: 'led-chandelier' });
+      if (existingLedChandelierCat) {
+        existingLedChandelierCat.name = 'Classic Chandelier';
+        existingLedChandelierCat.slug = 'classic-chandelier';
+        existingLedChandelierCat.seoTitle = 'Classic Chandeliers | LightHut';
+        await existingLedChandelierCat.save();
+        console.log('[Server] Migrated led-chandelier category to Classic Chandelier.');
+      } else {
+        const existingClassicChandelierCat = await Category.findOne({ slug: 'classic-chandelier' });
+        if (!existingClassicChandelierCat) {
+          await Category.create({
+            name: 'Classic Chandelier',
+            slug: 'classic-chandelier',
+            icon: '✨',
+            tag: 'Heritage & Grand Statement Centerpieces',
+            description: 'Timeless classic and architectural chandeliers crafted for luxury dining, living rooms, and lobbies.',
+            image: '/categories/chandelier.jpg',
+            sortOrder: 21,
+            isActive: true,
+            seoTitle: 'Classic Chandeliers | LightHut',
+            seoDescription: 'Shop handcrafted classic chandeliers in crystal, brass, and artisanal finishes.',
+            subcategories: [],
+          });
+          console.log('[Server] Created standalone Classic Chandelier category in MongoDB.');
+        }
+      }
+
+      const updatedProducts = await Product.updateMany(
+        { subcategory: 'led-chandelier' },
+        { $set: { subcategory: 'classic-chandelier', subcategoryName: 'Classic Chandelier' } }
+      );
+      if (updatedProducts.modifiedCount > 0) {
+        console.log(`[Server] Updated ${updatedProducts.modifiedCount} product(s) to Classic Chandelier.`);
+      }
+    } catch (migChandelierErr) {
+      console.warn('[Server] Classic Chandelier migration notice:', migChandelierErr.message);
     }
 
     // Ensure standalone Outdoor Hanging Lamp category exists for direct category queries

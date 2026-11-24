@@ -8,6 +8,7 @@ const CATEGORY_FAMILY_MAP = {
   'wall-lamp': ['wall-lamp', 'led-wall-lamp', 'classic-wall-lamp', 'wall'],
   'chandelier': [
     'chandelier',
+    'classic-chandelier',
     'led-chandelier',
     'e14-chandelier',
     'profile-chandelier',
@@ -18,6 +19,7 @@ const CATEGORY_FAMILY_MAP = {
     'fan-chandelier',
     'ceiling-chandelier',
   ],
+  'classic-chandelier': ['classic-chandelier', 'led-chandelier', 'chandelier'],
   'double-height': ['double-height', 'crystal-chandelier', 'modern-double-height-chandelier'],
   'outdoor-light': ['outdoor-light', 'gate-lamp', 'outdoor-wall-lamp', 'outdoor-hanging-lamp', 'outdoor'],
   'outdoor-hanging-lamp': ['outdoor-hanging-lamp', 'outdoor-hanging', 'hanging-lamp'],

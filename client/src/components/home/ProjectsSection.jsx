@@ -53,7 +53,7 @@ const LIGHTING_COLLECTIONS = [
     image: '/categories/chandelier.jpg',
     description: 'Magnificent multi-tier chandeliers spanning modern LED rings, E14 crystals, linear profiles, Italian Murano glass, modern branches, antic fixtures, and fan chandeliers.',
     fixtures: [
-      'Led Chandelier',
+      'Classic Chandelier',
       'E14 Chandelier',
       'Profile Chandelier',
       'Glass Chandelier',
@@ -65,7 +65,7 @@ const LIGHTING_COLLECTIONS = [
     ],
     link: '/catalog?category=chandelier',
     subImages: [
-      { url: '/categories/chandelier.jpg', title: 'LH-CH101 Multi-Tier Ring Led Chandelier' },
+      { url: '/categories/chandelier.jpg', title: 'LH-CH101 Multi-Tier Ring Classic Chandelier' },
       { url: '/banner-empire.jpg', title: 'LH-CH102 Regal Gilded E14 Chandelier' },
       { url: '/banner-amalfi.jpg', title: 'LH-CH103 Extruded Slim Profile Chandelier' },
       { url: '/hero-pendant.jpg', title: 'LH-CH104 Handcrafted Fluted Glass Chandelier' },

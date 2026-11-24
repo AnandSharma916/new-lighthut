@@ -19,7 +19,7 @@ export const MASTER_CATEGORIES = [
     productsCount: 9,
     total: 9,
     subcategories: [
-      { name: 'LED Chandelier', slug: 'led-chandelier', count: 2, image: '/categories/chandelier.jpg' },
+      { name: 'Classic Chandelier', slug: 'classic-chandelier', count: 2, image: '/categories/chandelier.jpg' },
       { name: 'E14 Chandelier', slug: 'e14-chandelier', count: 2, image: '/categories/e14-chandelier.jpg' },
       { name: 'Profile Chandelier', slug: 'profile-chandelier', count: 2, image: '/categories/profile-chandelier.jpg' },
       { name: 'Glass Chandelier', slug: 'glass-chandelier', count: 2, image: '/categories/glass-chandelier.jpg' },
@@ -338,16 +338,16 @@ export const MASTER_PRODUCTS = [
     },
   },
 
-  // ── CHANDELIER: LED Chandelier ──
+  // ── CHANDELIER: Classic Chandelier ──
   {
     _id: 'prod-ch-101',
-    name: 'LH-CH101 Multi-Tier Ring LED Chandelier',
-    slug: 'lh-ch101-multi-tier-ring-led-chandelier',
+    name: 'LH-CH101 Multi-Tier Ring Classic Chandelier',
+    slug: 'lh-ch101-multi-tier-ring-classic-chandelier',
     sku: 'LH-CH101',
     category: 'chandelier',
-    subcategory: 'led-chandelier',
+    subcategory: 'classic-chandelier',
     categoryName: 'Chandelier',
-    shortDescription: '3-Ring floating orbital LED chandelier with brushed champagne gold finish.',
+    shortDescription: '3-Ring floating orbital classic chandelier with brushed champagne gold finish.',
     description: 'Three concentric circular rings suspended on ultra-fine stainless aircraft cables. Each ring features continuous internal silicone diffusers for seamless, 360-degree glare-free illumination.',
     price: 18999,
     isFeatured: true,

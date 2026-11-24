@@ -170,7 +170,7 @@ export const SearchModal = ({ isOpen, onClose }) => {
                 <div className="py-8 px-4 text-center">
                   <p className="text-xs uppercase tracking-luxury text-neutral-500 font-semibold mb-3">Popular Searches</p>
                   <div className="flex flex-wrap justify-center gap-2">
-                    {['Wall Lamp', 'LED Chandelier', 'Pendant Lamp', 'Double Height', 'Outdoor Light', 'Dining Table Lamp', 'Table Lamp', 'Floor Lamp', 'Filament Bulb', 'Spare Driver'].map((tag) => (
+                    {['Wall Lamp', 'Classic Chandelier', 'Pendant Lamp', 'Double Height', 'Outdoor Light', 'Dining Table Lamp', 'Table Lamp', 'Floor Lamp', 'Filament Bulb', 'Spare Driver'].map((tag) => (
                       <button
                         key={tag}
                         onClick={() => setSearchTerm(tag)}

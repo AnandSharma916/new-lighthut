@@ -40,7 +40,7 @@ export const CATALOG_CATEGORY_DEFINITIONS = [
     specs: 'K9 Crystal • Precision Metal • Up to 5m Drops',
     image: '/categories/chandelier.jpg',
     subcategories: [
-      { name: 'Led Chandelier', slug: 'led-chandelier', image: '/categories/chandelier.jpg' },
+      { name: 'Classic Chandelier', slug: 'classic-chandelier', image: '/categories/chandelier.jpg' },
       { name: 'E14 Chandelier', slug: 'e14-chandelier', image: '/categories/e14-chandelier.jpg' },
       { name: 'Profile Chandelier', slug: 'profile-chandelier', image: '/categories/profile-chandelier.jpg' },
       { name: 'Glass Chandelier', slug: 'glass-chandelier', image: '/categories/glass-chandelier.jpg' },
