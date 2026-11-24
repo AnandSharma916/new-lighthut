@@ -399,78 +399,100 @@ export const Catalog = () => {
       { slug: 'pendant-lamp', name: 'Pendant Lamp' },
       { slug: 'wall-lamp', name: 'Wall Lamp' },
       { slug: 'double-height', name: 'Double Height' },
-      { slug: 'dining-table-lamp', name: 'Dining Table Lamp' },
-      { slug: 'outdoor-light', name: 'Outdoor Light' },
       { slug: 'table-lamp', name: 'Table Lamp' },
       { slug: 'floor-lamp', name: 'Floor Lamp' },
+      { slug: 'dining-table-lamp', name: 'Dining Table Lamp' },
+      { slug: 'outdoor-light', name: 'Outdoor Light' },
       { slug: 'led-filament-bulb', name: 'LED Filament Bulb' },
       { slug: 'spare-part', name: 'Spare Part' },
     ];
 
-    const matchProductToCatSlug = (p, targetSlug) => {
-      const target = String(targetSlug || '').toLowerCase();
+    // Accurate resolver that returns the exact canonical category slug for any product
+    const getProductCanonicalSlug = (p) => {
+      let rawSlug = '';
+      let rawName = '';
 
-      // Check p.category
       if (p.category) {
         if (typeof p.category === 'object') {
-          const cSlug = String(p.category.slug || '').toLowerCase();
-          const cName = String(p.category.name || '').toLowerCase();
-          if (cSlug === target) return true;
-          if (cName.replace(/\s+/g, '-').includes(target) || target.replace(/-/g, ' ').includes(cName)) return true;
+          rawSlug = String(p.category.slug || '').trim().toLowerCase();
+          rawName = String(p.category.name || '').trim().toLowerCase();
         } else if (typeof p.category === 'string') {
-          const cStr = p.category.toLowerCase();
-          if (cStr === target) return true;
+          rawSlug = p.category.trim().toLowerCase();
         }
       }
 
-      // Check categoryName / categoryKey
-      const catName = String(p.categoryName || p.categoryKey || '').toLowerCase();
-      if (catName) {
-        const cleanCat = catName.replace(/[^a-z0-9]/g, '');
-        const cleanTarget = target.replace(/[^a-z0-9]/g, '');
-        if (cleanCat === cleanTarget) return true;
+      if (!rawName && p.categoryName) {
+        rawName = String(p.categoryName).trim().toLowerCase();
+      }
+      if (!rawSlug && p.categoryKey) {
+        rawSlug = String(p.categoryKey).trim().toLowerCase();
       }
 
-      // Check subcategory or name / slug
-      const sub = String(p.subcategory || p.subCategory || '').toLowerCase();
+      // 1. Exact Slug Match (Strict, mutually exclusive)
+      if (rawSlug) {
+        if (rawSlug === 'dining-table-lamp' || rawSlug === 'dining') return 'dining-table-lamp';
+        if (rawSlug === 'table-lamp' || rawSlug === 'table') return 'table-lamp';
+        if (rawSlug === 'floor-lamp' || rawSlug === 'floor') return 'floor-lamp';
+        if (rawSlug === 'double-height' || rawSlug === 'double') return 'double-height';
+        if (rawSlug === 'outdoor-light' || rawSlug === 'outdoor') return 'outdoor-light';
+        if (rawSlug === 'pendant-lamp' || rawSlug === 'pendant') return 'pendant-lamp';
+        if (rawSlug === 'wall-lamp' || rawSlug === 'wall') return 'wall-lamp';
+        if (rawSlug === 'chandelier' || rawSlug === 'chandeliers') return 'chandelier';
+        if (rawSlug === 'led-filament-bulb' || rawSlug === 'bulb') return 'led-filament-bulb';
+        if (rawSlug === 'spare-part' || rawSlug === 'spare') return 'spare-part';
+      }
+
+      // 2. Exact Category Name Match (Alphanumeric normalized, no partial substring)
+      if (rawName) {
+        const clean = rawName.replace(/[^a-z0-9]/g, '');
+        if (clean === 'diningtablelamp') return 'dining-table-lamp';
+        if (clean === 'tablelamp') return 'table-lamp';
+        if (clean === 'floorlamp') return 'floor-lamp';
+        if (clean === 'doubleheight') return 'double-height';
+        if (clean === 'outdoorlight') return 'outdoor-light';
+        if (clean === 'pendantlamp' || clean === 'pendantlamps') return 'pendant-lamp';
+        if (clean === 'walllamp' || clean === 'walllamps') return 'wall-lamp';
+        if (clean === 'chandelier' || clean === 'chandeliers') return 'chandelier';
+        if (clean === 'ledfilamentbulb' || clean === 'filamentbulb') return 'led-filament-bulb';
+        if (clean === 'sparepart' || clean === 'spareparts') return 'spare-part';
+      }
+
+      // 3. Subcategory inspection
+      const sub = String(p.subcategory || p.subCategory || '').trim().toLowerCase();
+      if (sub) {
+        if (sub.includes('dh') || sub.includes('double')) return 'double-height';
+        if (sub.includes('dining')) return 'dining-table-lamp';
+        if (sub.includes('table-lamp') || sub === 'table') return 'table-lamp';
+        if (sub.includes('floor-lamp') || sub === 'floor') return 'floor-lamp';
+        if (sub.includes('gate') || sub.includes('outdoor')) return 'outdoor-light';
+        if (sub.includes('wall')) return 'wall-lamp';
+        if (sub.includes('pendant') || sub.includes('hanging')) return 'pendant-lamp';
+        if (sub.includes('chandelier')) return 'chandelier';
+        if (sub.includes('filament') || sub.includes('bulb')) return 'led-filament-bulb';
+        if (sub.includes('spare') || sub.includes('driver') || sub.includes('base')) return 'spare-part';
+      }
+
+      // 4. SKU, Name and Slug heuristic inspection
       const name = String(p.name || '').toLowerCase();
-      const slug = String(p.slug || '').toLowerCase();
+      const pSlug = String(p.slug || '').toLowerCase();
+      const sku = String(p.sku || '').toUpperCase();
 
-      if (target === 'double-height') {
-        return sub.includes('dh') || sub.includes('double') || name.includes('double height') || slug.includes('double-height');
-      }
-      if (target === 'chandelier') {
-        if (sub.includes('dh') || sub.includes('double') || name.includes('double height') || slug.includes('double-height')) return false;
-        return sub.includes('chandelier') || name.includes('chandelier') || slug.includes('chandelier');
-      }
-      if (target === 'outdoor-light') {
-        return sub.includes('outdoor') || sub.includes('gate') || name.includes('outdoor') || name.includes('gate lamp');
-      }
-      if (target === 'pendant-lamp') {
-        if (sub.includes('outdoor') || name.includes('outdoor')) return false;
-        return sub.includes('pendant') || sub.includes('hanging') || name.includes('hanging') || name.includes('pendant');
-      }
-      if (target === 'wall-lamp') {
-        if (sub.includes('outdoor') || name.includes('outdoor')) return false;
-        return sub.includes('wall') || name.includes('wall lamp') || name.includes('sconce');
-      }
-      if (target === 'dining-table-lamp') {
-        return sub.includes('dining') || name.includes('dining');
-      }
-      if (target === 'table-lamp') {
-        if (sub.includes('dining') || name.includes('dining')) return false;
-        return sub.includes('table') || name.includes('table lamp');
-      }
-      if (target === 'floor-lamp') {
-        return sub.includes('floor') || name.includes('floor lamp');
-      }
-      if (target === 'led-filament-bulb') {
-        return sub.includes('bulb') || sub.includes('filament') || name.includes('bulb') || name.includes('filament');
-      }
-      if (target === 'spare-part') {
-        return sub.includes('spare') || sub.includes('driver') || sub.includes('base') || name.includes('spare');
-      }
-      return false;
+      if (name.includes('dining') || pSlug.includes('dining')) return 'dining-table-lamp';
+      if (sku.endsWith('TL') || sku.includes('-TL') || name.includes('table lamp') || pSlug.includes('table-lamp')) return 'table-lamp';
+      if (sku.endsWith('FL') || sku.includes('-FL') || name.includes('floor lamp') || pSlug.includes('floor-lamp')) return 'floor-lamp';
+      if (name.includes('double height') || pSlug.includes('double-height')) return 'double-height';
+      if (name.includes('gate') || name.includes('outdoor') || pSlug.includes('outdoor')) return 'outdoor-light';
+      if (name.includes('hanging') || name.includes('pendant') || pSlug.includes('pendant')) return 'pendant-lamp';
+      if (name.includes('wall') || name.includes('sconce') || pSlug.includes('wall')) return 'wall-lamp';
+      if (name.includes('chandelier') || pSlug.includes('chandelier')) return 'chandelier';
+      if (name.includes('bulb') || name.includes('filament')) return 'led-filament-bulb';
+      if (name.includes('driver') || name.includes('spare')) return 'spare-part';
+
+      return 'other';
+    };
+
+    const matchProductToCatSlug = (p, targetSlug) => {
+      return getProductCanonicalSlug(p) === targetSlug;
     };
 
     // Image Resolver prioritizing admin chosen cover image, with authentic uncropped fallback
@@ -588,7 +610,14 @@ export const Catalog = () => {
       const offerPriceFormatted = `₹${priceNum.toLocaleString('en-IN')}`;
       const imgSrc = resolveProductImg(p);
       const cleanSku = p.sku && !/^LH-\d{6}-\d{3}$/i.test(p.sku) ? p.sku : '';
-      const subTag = p.subcategoryName || p.subcategory || p.categoryName || p.category?.name || activeCategoryData?.name || 'Architectural Lighting';
+      let rawTag = p.subcategoryName || p.subcategory || p.categoryName || (typeof p.category === 'object' ? p.category?.name : p.category) || '';
+      if (!rawTag) rawTag = activeCategoryData?.name || 'Architectural Lighting';
+      const subTag = rawTag.includes('-')
+        ? rawTag
+            .split('-')
+            .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+            .join(' ')
+        : rawTag;
 
       return `
       <div class="product-card">

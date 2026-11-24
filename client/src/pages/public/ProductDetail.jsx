@@ -293,10 +293,6 @@ export const ProductDetail = () => {
 
     let rawUrl = explicitCover || CATEGORY_BANNER_MAP[catKey] || NEUTRAL_FALLBACK_IMAGE;
 
-    if (rawUrl.includes('/products/') && rawUrl.endsWith('.jpg') && !rawUrl.includes('-full')) {
-      rawUrl = rawUrl.replace(/\.jpg$/, '-full.jpg');
-    }
-
     const fullImageUrl =
       rawUrl.startsWith('http://') || rawUrl.startsWith('https://') || rawUrl.startsWith('data:')
         ? rawUrl

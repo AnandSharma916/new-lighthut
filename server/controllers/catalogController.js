@@ -680,11 +680,11 @@ export const getCatalog = async (req, res, next) => {
       Product.aggregate([
         { $match: { isPublished: true } },
         { $group: { _id: '$category', count: { $sum: 1 } } },
-      ]),
+      ]).allowDiskUse(true),
       Product.aggregate([
         { $match: { isPublished: true, subcategory: { $exists: true, $ne: '' } } },
         { $group: { _id: '$subcategory', count: { $sum: 1 } } },
-      ]),
+      ]).allowDiskUse(true),
     ]);
 
     // 10. Calculate Real-Time Product Counts Per Category & Subcategory
@@ -827,7 +827,7 @@ export const getCatalog = async (req, res, next) => {
         price: p.price ?? 0,
         shortDescription: p.shortDescription || '',
         description: p.description || '',
-        images: p.images || [],
+        images: pageSize > 50 && Array.isArray(p.images) ? p.images.slice(0, 2) : (p.images || []),
         primaryImage: coverImg,
         secondaryImage: hoverImg,
         specifications: p.specifications || {},
@@ -890,11 +890,11 @@ export const getCatalogOptions = async (req, res, next) => {
       Product.aggregate([
         { $match: { isPublished: true } },
         { $group: { _id: '$category', count: { $sum: 1 } } },
-      ]),
+      ]).allowDiskUse(true),
       Product.aggregate([
         { $match: { isPublished: true, subcategory: { $exists: true, $ne: '' } } },
         { $group: { _id: '$subcategory', count: { $sum: 1 } } },
-      ]),
+      ]).allowDiskUse(true),
       Product.aggregate([
         { $match: { isPublished: true, 'specifications.finish': { $exists: true, $ne: '' } } },
         { $group: { _id: '$specifications.finish', count: { $sum: 1 } } },
