@@ -200,6 +200,7 @@ export const getProducts = async (req, res, next) => {
 
     const total = await Product.countDocuments(query);
     const products = await Product.find(query)
+      .allowDiskUse(true)
       .populate('category', 'name slug')
       .sort(sortOption)
       .skip(skip)

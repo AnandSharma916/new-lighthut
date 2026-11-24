@@ -670,6 +670,7 @@ export const getCatalog = async (req, res, next) => {
     const [totalMatching, rawProducts, allCategoriesInDb, productCountAggregate, subcategoryCountAggregate] = await Promise.all([
       Product.countDocuments(query),
       Product.find(query)
+        .allowDiskUse(true)
         .populate('category', 'name slug description image')
         .sort(sortOption)
         .skip(skip)

@@ -378,6 +378,8 @@ export const Catalog = () => {
         ? subFilterOverride
         : currentSub || '';
 
+    const isAllCategories = !currentCategory || currentCategory === 'all';
+
     // Subcategory display title
     let subDisplayName = '';
     if (effectiveSub) {
@@ -385,20 +387,102 @@ export const Catalog = () => {
       subDisplayName = subDef?.name || effectiveSub.replace(/-/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
     }
 
-    const categoryTitle = effectiveSub
+    const categoryTitle = isAllCategories
+      ? 'Complete Architectural Lighting Catalog'
+      : effectiveSub
       ? `${activeCategoryData?.name || 'Architectural Lighting'} - ${subDisplayName}`
       : activeCategoryData?.name || 'All Architectural Lighting';
 
-    // Image Resolver prioritizing admin chosen cover image, with authentic full uncropped fallback
+    // Canonical Master Categories in optimal architectural presentation order
+    const CANONICAL_CATEGORIES = [
+      { slug: 'chandelier', name: 'Chandelier' },
+      { slug: 'pendant-lamp', name: 'Pendant Lamp' },
+      { slug: 'wall-lamp', name: 'Wall Lamp' },
+      { slug: 'double-height', name: 'Double Height' },
+      { slug: 'dining-table-lamp', name: 'Dining Table Lamp' },
+      { slug: 'outdoor-light', name: 'Outdoor Light' },
+      { slug: 'table-lamp', name: 'Table Lamp' },
+      { slug: 'floor-lamp', name: 'Floor Lamp' },
+      { slug: 'led-filament-bulb', name: 'LED Filament Bulb' },
+      { slug: 'spare-part', name: 'Spare Part' },
+    ];
+
+    const matchProductToCatSlug = (p, targetSlug) => {
+      const target = String(targetSlug || '').toLowerCase();
+
+      // Check p.category
+      if (p.category) {
+        if (typeof p.category === 'object') {
+          const cSlug = String(p.category.slug || '').toLowerCase();
+          const cName = String(p.category.name || '').toLowerCase();
+          if (cSlug === target) return true;
+          if (cName.replace(/\s+/g, '-').includes(target) || target.replace(/-/g, ' ').includes(cName)) return true;
+        } else if (typeof p.category === 'string') {
+          const cStr = p.category.toLowerCase();
+          if (cStr === target) return true;
+        }
+      }
+
+      // Check categoryName / categoryKey
+      const catName = String(p.categoryName || p.categoryKey || '').toLowerCase();
+      if (catName) {
+        const cleanCat = catName.replace(/[^a-z0-9]/g, '');
+        const cleanTarget = target.replace(/[^a-z0-9]/g, '');
+        if (cleanCat === cleanTarget) return true;
+      }
+
+      // Check subcategory or name / slug
+      const sub = String(p.subcategory || p.subCategory || '').toLowerCase();
+      const name = String(p.name || '').toLowerCase();
+      const slug = String(p.slug || '').toLowerCase();
+
+      if (target === 'double-height') {
+        return sub.includes('dh') || sub.includes('double') || name.includes('double height') || slug.includes('double-height');
+      }
+      if (target === 'chandelier') {
+        if (sub.includes('dh') || sub.includes('double') || name.includes('double height') || slug.includes('double-height')) return false;
+        return sub.includes('chandelier') || name.includes('chandelier') || slug.includes('chandelier');
+      }
+      if (target === 'outdoor-light') {
+        return sub.includes('outdoor') || sub.includes('gate') || name.includes('outdoor') || name.includes('gate lamp');
+      }
+      if (target === 'pendant-lamp') {
+        if (sub.includes('outdoor') || name.includes('outdoor')) return false;
+        return sub.includes('pendant') || sub.includes('hanging') || name.includes('hanging') || name.includes('pendant');
+      }
+      if (target === 'wall-lamp') {
+        if (sub.includes('outdoor') || name.includes('outdoor')) return false;
+        return sub.includes('wall') || name.includes('wall lamp') || name.includes('sconce');
+      }
+      if (target === 'dining-table-lamp') {
+        return sub.includes('dining') || name.includes('dining');
+      }
+      if (target === 'table-lamp') {
+        if (sub.includes('dining') || name.includes('dining')) return false;
+        return sub.includes('table') || name.includes('table lamp');
+      }
+      if (target === 'floor-lamp') {
+        return sub.includes('floor') || name.includes('floor lamp');
+      }
+      if (target === 'led-filament-bulb') {
+        return sub.includes('bulb') || sub.includes('filament') || name.includes('bulb') || name.includes('filament');
+      }
+      if (target === 'spare-part') {
+        return sub.includes('spare') || sub.includes('driver') || sub.includes('base') || name.includes('spare');
+      }
+      return false;
+    };
+
+    // Image Resolver prioritizing admin chosen cover image, with authentic uncropped fallback
     const resolveProductImg = (p) => {
       const explicitCover =
         p.images?.find((img) => img.isCover)?.url ||
         p.mainImage ||
         p.primaryImage ||
-        p.images?.[0]?.url;
+        (Array.isArray(p.images) && p.images[0] ? (typeof p.images[0] === 'string' ? p.images[0] : p.images[0].url) : null);
 
-      const fullImgObj = !explicitCover
-        ? p.images?.find((img) => {
+      const fullImgObj = !explicitCover && Array.isArray(p.images)
+        ? p.images.find((img) => {
             const u = typeof img === 'string' ? img : img.url || '';
             return u.includes('-full') || (img.alt && img.alt.toLowerCase().includes('installed'));
           })
@@ -411,10 +495,6 @@ export const Catalog = () => {
       let rawUrl = explicitCover || fullUrl || getCategoryDefaultCover(subKey || catKey);
 
       if (!rawUrl) rawUrl = NEUTRAL_FALLBACK_IMAGE;
-
-      if (rawUrl.includes('/products/') && rawUrl.endsWith('.jpg') && !rawUrl.includes('-full')) {
-        rawUrl = rawUrl.replace(/\.jpg$/, '-full.jpg');
-      }
 
       if (rawUrl.startsWith('http://') || rawUrl.startsWith('https://') || rawUrl.startsWith('data:')) {
         return rawUrl;
@@ -518,7 +598,6 @@ export const Catalog = () => {
             src="${imgSrc}" 
             alt="${p.name}" 
             loading="eager"
-            crossorigin="anonymous"
             onerror="this.onerror=null; this.src='${NEUTRAL_FALLBACK_IMAGE}';"
           />
         </div>
@@ -548,9 +627,39 @@ export const Catalog = () => {
     `;
     };
 
-    // Subcategory Separation & Grouping (Products are NEVER mixed together)
+    // Category / Subcategory Separation & Sequential Grouping
     let sections = [];
-    if (!effectiveSub && currentCategory === 'outdoor-light') {
+
+    if (isAllCategories) {
+      // Group across all canonical categories serial-wise
+      const assigned = new Set();
+      CANONICAL_CATEGORIES.forEach((catDef) => {
+        const matched = fixtureList.filter((p) => {
+          const pId = p._id || p.slug || p.sku || p.name;
+          return !assigned.has(pId) && matchProductToCatSlug(p, catDef.slug);
+        });
+        if (matched.length > 0) {
+          matched.forEach((p) => assigned.add(p._id || p.slug || p.sku || p.name));
+          sections.push({
+            name: `${catDef.name} Collection`,
+            count: matched.length,
+            items: matched,
+          });
+        }
+      });
+
+      const unassigned = fixtureList.filter((p) => {
+        const pId = p._id || p.slug || p.sku || p.name;
+        return !assigned.has(pId);
+      });
+      if (unassigned.length > 0) {
+        sections.push({
+          name: 'Additional Architectural Luminaires',
+          count: unassigned.length,
+          items: unassigned,
+        });
+      }
+    } else if (!effectiveSub && currentCategory === 'outdoor-light') {
       const gateLamps = fixtureList.filter((p) => fixtureMatchesSub(p, 'gate-lamp'));
       const wallLamps = fixtureList.filter((p) => fixtureMatchesSub(p, 'outdoor-wall-lamp') && !fixtureMatchesSub(p, 'gate-lamp'));
       const hangingLamps = fixtureList.filter((p) => fixtureMatchesSub(p, 'outdoor-hanging-lamp') && !fixtureMatchesSub(p, 'gate-lamp') && !fixtureMatchesSub(p, 'outdoor-wall-lamp'));
@@ -581,39 +690,39 @@ export const Catalog = () => {
       if (unassigned.length > 0) {
         sections.push({ name: 'Additional Architectural Models', count: unassigned.length, items: unassigned });
       }
-    }
-
-    let productsHtml = '';
-    if (sections.length > 1) {
-      let runningIdx = 0;
-      productsHtml = sections
-        .map((sec, secIdx) => {
-          const cards = sec.items
-            .map((p) => {
-              runningIdx++;
-              return renderCardHtml(p, runningIdx);
-            })
-            .join('');
-
-          return `
-            <div class="category-section-banner ${secIdx > 0 ? 'section-page-break' : ''}">
-              <div class="section-badge">COLLECTION 0${secIdx + 1}</div>
-              <div class="section-title">${sec.name.toUpperCase()}</div>
-              <div class="section-count">${sec.count} Fixtures Available</div>
-            </div>
-            <div class="grid">
-              ${cards}
-            </div>
-          `;
-        })
-        .join('');
     } else {
-      productsHtml = `
-        <div class="grid">
-          ${fixtureList.map((p, idx) => renderCardHtml(p, idx + 1)).join('')}
-        </div>
-      `;
+      sections.push({
+        name: subDisplayName || activeCategoryData?.name || 'Architectural Lighting',
+        count: fixtureList.length,
+        items: fixtureList,
+      });
     }
+
+    let runningIdx = 0;
+    const productsHtml = sections
+      .map((sec, secIdx) => {
+        const cards = sec.items
+          .map((p) => {
+            runningIdx++;
+            return renderCardHtml(p, runningIdx);
+          })
+          .join('');
+
+        const colNum = secIdx + 1;
+        const formattedCol = colNum < 10 ? `0${colNum}` : `${colNum}`;
+
+        return `
+          <div class="category-section-banner ${secIdx > 0 ? 'section-page-break' : ''}">
+            <div class="section-badge">COLLECTION ${formattedCol}</div>
+            <div class="section-title">${sec.name.toUpperCase()}</div>
+            <div class="section-count">${sec.count} Fixtures Available</div>
+          </div>
+          <div class="grid">
+            ${cards}
+          </div>
+        `;
+      })
+      .join('');
 
     const htmlContent = `
       <!DOCTYPE html>
@@ -761,6 +870,7 @@ export const Catalog = () => {
             }
             .section-page-break {
               page-break-before: always;
+              break-before: page;
               margin-top: 32px;
             }
             .section-badge {
@@ -917,7 +1027,7 @@ export const Catalog = () => {
               </div>
             </div>
             <div style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 6px 14px; border-radius: 9999px; font-size: 11px; font-weight: 700;">
-              ${fixtureList.length} Curated Fixtures
+              ${fixtureList.length} Curated Fixtures${sections.length > 1 ? ` • ${sections.length} Collections` : ''}
             </div>
           </div>
 
@@ -1095,7 +1205,7 @@ export const Catalog = () => {
                     ? `Download ${currentSub.replace(/-/g, ' ').toUpperCase()} Catalog (PDF)`
                     : currentCategory !== 'all'
                     ? `Download ${activeCategoryData.name} Catalog (PDF)`
-                    : 'Download 2026 Catalog (PDF)'}
+                    : 'Download Complete Catalog (All Categories PDF)'}
                 </span>
               </button>
 
