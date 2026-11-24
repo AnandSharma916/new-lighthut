@@ -73,6 +73,13 @@ const initDB = async () => {
       console.warn('[Server] SKU cleanup warning:', cleanErr.message);
     }
 
+    try {
+      await Product.syncIndexes();
+      console.log('[Server] High-performance compound indexes synced.');
+    } catch (syncErr) {
+      console.warn('[Server] Product index sync warning:', syncErr.message);
+    }
+
     // Auto-sync subcategories, icon, and tag into existing Category records in MongoDB
     for (const group of CATALOG_CATEGORY_GROUPS) {
       const cat = await Category.findOne({ slug: group.slug });

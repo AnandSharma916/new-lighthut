@@ -146,6 +146,12 @@ productSchema.virtual('mainImage').get(function () {
   return '';
 });
 
+// High-performance compound indexes for instant zero-memory catalog sorting
+productSchema.index({ isPublished: 1, subcategory: 1, isFeatured: -1, sortOrder: 1, createdAt: -1 });
+productSchema.index({ isPublished: 1, createdAt: -1 });
+productSchema.index({ isPublished: 1, category: 1, createdAt: -1 });
+productSchema.index({ category: 1, isPublished: 1 });
+
 // Full-text search index for fast searching across name, SKU, and descriptions
 productSchema.index({
   name: 'text',

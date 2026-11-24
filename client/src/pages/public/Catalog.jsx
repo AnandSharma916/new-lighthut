@@ -542,9 +542,8 @@ export const Catalog = () => {
     let fixtureList = [];
 
     try {
-      // 1. Fetch ALL products for this category/filter (up to 1000 items)
-      const fetchParams = {
-        limit: 1000,
+      // 1. Fetch ALL products for this category/filter in safe parallel batches of 100
+      const baseParams = {
         sort: currentSort,
         category: currentCategory !== 'all' ? currentCategory : undefined,
         search: currentSearch.trim() !== '' ? currentSearch.trim() : undefined,
@@ -552,9 +551,27 @@ export const Catalog = () => {
         sub: effectiveSub || undefined,
       };
 
-      const fullData = await catalogService.getCatalog(fetchParams);
-      if (fullData && fullData.success && Array.isArray(fullData.products) && fullData.products.length > 0) {
-        fixtureList = fullData.products;
+      const firstBatch = await catalogService.getCatalog({ ...baseParams, limit: 100, page: 1 });
+      if (firstBatch && firstBatch.success && Array.isArray(firstBatch.products)) {
+        let allItems = [...firstBatch.products];
+        const total = firstBatch.pagination?.total || firstBatch.allTotal || 0;
+        const totalPages = firstBatch.pagination?.totalPages || (total > 0 ? Math.ceil(total / 100) : 1);
+
+        if (totalPages > 1) {
+          const remainingPromises = [];
+          for (let p = 2; p <= totalPages; p++) {
+            remainingPromises.push(catalogService.getCatalog({ ...baseParams, limit: 100, page: p }));
+          }
+          const batchResults = await Promise.all(remainingPromises);
+          batchResults.forEach((res) => {
+            if (res && res.success && Array.isArray(res.products)) {
+              allItems.push(...res.products);
+            }
+          });
+        }
+        if (allItems.length > 0) {
+          fixtureList = allItems;
+        }
       }
     } catch (err) {
       console.warn('[PDF Download] Failed to fetch full product list from API, using fallback:', err);
