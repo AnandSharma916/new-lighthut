@@ -273,17 +273,42 @@ const initDB = async () => {
           console.log(`[Server] Updated ${updatedAnticSubs.modifiedCount} product(s) to subcategory antique-chandelier.`);
         }
 
-        // Assign products with LED in title under Chandelier that have an empty subcategory to led-chandelier
+        // Assign products with LED in title or sku under Chandelier that have an empty subcategory to led-chandelier
         const remappedLedProducts = await Product.updateMany(
           {
             category: chandelierParent._id,
-            name: { $regex: /LED/i },
-            $or: [{ subcategory: '' }, { subcategory: { $exists: false } }, { subcategory: null }]
+            $or: [{ name: /LED/i }, { sku: /LED/i }],
+            subcategory: { $in: ['', null] }
           },
           { $set: { subcategory: 'led-chandelier', subcategoryName: 'LED Chandelier' } }
         );
         if (remappedLedProducts.modifiedCount > 0) {
           console.log(`[Server] Assigned ${remappedLedProducts.modifiedCount} LED chandelier product(s) to subcategory led-chandelier.`);
+        }
+
+        // Assign products with GLASS in title or sku under Chandelier that have an empty subcategory to glass-chandelier
+        const remappedGlassProducts = await Product.updateMany(
+          {
+            category: chandelierParent._id,
+            $or: [{ name: /GLASS/i }, { sku: /GLASS/i }],
+            subcategory: { $in: ['', null] }
+          },
+          { $set: { subcategory: 'glass-chandelier', subcategoryName: 'Glass Chandelier' } }
+        );
+        if (remappedGlassProducts.modifiedCount > 0) {
+          console.log(`[Server] Assigned ${remappedGlassProducts.modifiedCount} Glass chandelier product(s) to subcategory glass-chandelier.`);
+        }
+
+        // Assign remaining Chandelier products with empty subcategory to classic-chandelier
+        const remappedClassicProducts = await Product.updateMany(
+          {
+            category: chandelierParent._id,
+            subcategory: { $in: ['', null] }
+          },
+          { $set: { subcategory: 'classic-chandelier', subcategoryName: 'Classic Chandelier' } }
+        );
+        if (remappedClassicProducts.modifiedCount > 0) {
+          console.log(`[Server] Assigned ${remappedClassicProducts.modifiedCount} Classic chandelier product(s) to subcategory classic-chandelier.`);
         }
 
         // Standardize Classic Chandelier subcategory names

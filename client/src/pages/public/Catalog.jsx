@@ -224,11 +224,13 @@ export const Catalog = () => {
     const isAntique = target.includes('antic') || target.includes('antique');
     const isLedChandelier = target === 'led-chandelier' || target === 'led chandelier';
     const isClassicChandelier = target.includes('classic');
+    const isGlassChandelier = target.includes('glass');
 
     const filtered = products.filter((p) => {
       const pSub = String(p.subcategory || p.subCategory || '').toLowerCase();
       const pSlug = String(p.slug || '').toLowerCase();
       const pName = String(p.name || '').toLowerCase();
+      const pSku = String(p.sku || '').toLowerCase();
       const pCat = String(typeof p.category === 'string' ? p.category : p.category?.slug || p.category?.name || '').toLowerCase();
 
       if (isAntique) {
@@ -240,6 +242,7 @@ export const Catalog = () => {
           pName.includes('antique') ||
           pName.includes('antic') ||
           pName.includes('4012') ||
+          pSku.includes('4012') ||
           pSlug.includes('antique') ||
           pSlug.includes('antic')
         );
@@ -248,9 +251,17 @@ export const Catalog = () => {
         return (
           pSub === 'led-chandelier' ||
           pSub.includes('led') ||
-          pName.includes('led chd') ||
           pName.includes('led') ||
+          pSku.includes('led') ||
           pSlug.includes('led')
+        );
+      }
+      if (isGlassChandelier) {
+        return (
+          pSub.includes('glass') ||
+          pName.includes('glass') ||
+          pSku.includes('glass') ||
+          pSlug.includes('glass')
         );
       }
       if (isClassicChandelier) {
@@ -266,10 +277,11 @@ export const Catalog = () => {
         target.includes(pSub) ||
         pSlug.includes(target) ||
         pName.includes(target) ||
+        pSku.includes(target) ||
         pCat.includes(target)
       );
     });
-    return filtered.length > 0 ? filtered : products;
+    return filtered;
   }, [products, currentSub]);
 
   // Active Category Information (Computed with backend priority)

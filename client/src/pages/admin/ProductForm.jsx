@@ -141,7 +141,9 @@ export const ProductForm = () => {
             categories,
             p.category,
             p.subcategory,
-            p.subcategoryName
+            p.subcategoryName,
+            p.name || p.title,
+            p.sku
           );
 
           setFormData({
@@ -553,16 +555,10 @@ export const ProductForm = () => {
             categories={categories}
             selectedCategoryId={formData.category}
             onSelectCategory={(catId) => {
-              setFormData((prev) => {
-                const newCatObj = categories.find((c) => String(c._id) === String(catId));
-                const isSubValid = newCatObj?.subcategories?.some((s) => s.slug === prev.subcategory);
-                return {
-                  ...prev,
-                  category: catId,
-                  subcategory: isSubValid ? prev.subcategory : '',
-                  subcategoryName: isSubValid ? prev.subcategoryName : '',
-                };
-              });
+              setFormData((prev) => ({
+                ...prev,
+                category: catId,
+              }));
             }}
             selectedSubcategory={formData.subcategory}
             onSelectSubcategory={(subSlug, subName) => {

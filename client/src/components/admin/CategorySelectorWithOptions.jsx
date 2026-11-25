@@ -30,91 +30,118 @@ export const CategorySelectorWithOptions = ({
   // 3. Normalize subcategory slug if it contains 'antic'
   if (effectiveSubSlug.includes('antic') || effectiveSubSlug.includes('antique')) {
     effectiveSubSlug = 'antique-chandelier';
+  } else if (effectiveSubSlug === 'led-chandelier' || effectiveSubSlug === 'led chandelier') {
+    effectiveSubSlug = 'led-chandelier';
+  } else if (effectiveSubSlug === 'classic-chandelier' || effectiveSubSlug === 'classic chandelier') {
+    effectiveSubSlug = 'classic-chandelier';
   }
 
   // 4. Available subcategories for the resolved category
   const availableSubcategories =
     effectiveCategoryObj?.subcategories?.filter((s) => s.isActive !== false) || [];
 
-  // 5. Separate master categories for clean display
+  // Sort categories: Master categories first, then any other categories
   const masterSlugsSet = new Set(MASTER_CATEGORY_SLUGS);
-  const masterCategories = categories.filter((c) => masterSlugsSet.has(c.slug));
-  const otherCategories = categories.filter((c) => !masterSlugsSet.has(c.slug));
+  const sortedCategories = [
+    ...categories.filter((c) => masterSlugsSet.has(c.slug)),
+    ...categories.filter((c) => !masterSlugsSet.has(c.slug)),
+  ];
+
+  // Handle category change cleanly
+  const handleCategoryChange = (newCatId) => {
+    if (!newCatId) {
+      if (onSelectCategory) onSelectCategory('');
+      if (onSelectSubcategory) onSelectSubcategory('', '');
+      return;
+    }
+
+    const chosenCat = categories.find((c) => String(c._id) === String(newCatId));
+    if (!chosenCat) {
+      if (onSelectCategory) onSelectCategory(newCatId);
+      return;
+    }
+
+    // Check if user selected a standalone category (e.g. LED Chandelier or Antique Chandelier)
+    if (STANDALONE_PARENT_MAP[chosenCat.slug]) {
+      const mapping = STANDALONE_PARENT_MAP[chosenCat.slug];
+      const parentObj = categories.find((c) => c.slug === mapping.parentSlug);
+      const targetCatId = parentObj ? parentObj._id : newCatId;
+      if (onSelectCategory) onSelectCategory(targetCatId);
+      if (onSelectSubcategory) onSelectSubcategory(mapping.subcategory, mapping.subcategoryName);
+      return;
+    }
+
+    // Normal parent category selected
+    if (onSelectCategory) onSelectCategory(chosenCat._id);
+
+    // If current subcategory belongs to chosen category, keep it! Otherwise reset
+    const validSubs = chosenCat.subcategories?.filter((s) => s.isActive !== false) || [];
+    const currentSubMatch = validSubs.find(
+      (s) => s.slug === selectedSubcategory || s.slug === effectiveSubSlug
+    );
+
+    if (currentSubMatch) {
+      if (onSelectSubcategory) onSelectSubcategory(currentSubMatch.slug, currentSubMatch.name);
+    } else {
+      if (onSelectSubcategory) onSelectSubcategory('', '');
+    }
+  };
+
+  // Handle subcategory change cleanly
+  const handleSubcategoryChange = (subSlug) => {
+    if (!subSlug) {
+      if (onSelectSubcategory) onSelectSubcategory('', '');
+      return;
+    }
+    const matched = availableSubcategories.find((s) => s.slug === subSlug);
+    const subName = matched ? matched.name : subSlug.replace(/-/g, ' ').toUpperCase();
+    if (onSelectSubcategory) onSelectSubcategory(subSlug, subName);
+  };
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-      {/* ── STEP 1: CATEGORY SELECTION ── */}
+      {/* ── CATEGORY SELECTION ── */}
       <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <label className="text-xs font-semibold uppercase tracking-wider text-neutral-300 flex items-center gap-1.5">
-            <Layers className="w-3.5 h-3.5 text-[#DC2626]" />
-            <span>Product Category</span>
-            <span className="text-[11px] text-neutral-500 font-normal lowercase">(optional)</span>
-          </label>
-          <span className="text-[10px] text-neutral-400 font-mono">Step 1</span>
-        </div>
+        <label className="text-xs font-semibold uppercase tracking-wider text-neutral-300 flex items-center gap-1.5">
+          <Layers className="w-3.5 h-3.5 text-[#DC2626]" />
+          <span>Product Category</span>
+          <span className="text-[11px] text-neutral-500 font-normal lowercase">(optional)</span>
+        </label>
 
-        {/* The Native Styled Category Dropdown */}
         <select
           value={effectiveCategoryObj?._id || ''}
-          onChange={(e) => {
-            const newCatId = e.target.value;
-            onSelectCategory(newCatId);
-          }}
+          onChange={(e) => handleCategoryChange(e.target.value)}
           disabled={disabled}
           className="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 text-white focus:border-[#DC2626] focus:outline-none transition-all text-sm font-medium cursor-pointer"
         >
           <option value="" className="bg-[#14171d] text-neutral-400">
             -- Choose a category (Optional) --
           </option>
-          {masterCategories.length > 0 && (
-            <optgroup label="Primary Architectural Categories" className="bg-[#14171d] text-neutral-300 font-semibold">
-              {masterCategories.map((cat) => (
-                <option key={cat._id} value={cat._id} className="bg-[#14171d] text-white">
-                  {cat.icon || '💡'} {cat.name} ({cat.subcategories?.length || 0} sub-types)
-                </option>
-              ))}
-            </optgroup>
-          )}
-          {otherCategories.length > 0 && (
-            <optgroup label="Other / Standalone Categories" className="bg-[#14171d] text-neutral-400 font-normal">
-              {otherCategories.map((cat) => (
-                <option key={cat._id} value={cat._id} className="bg-[#14171d] text-neutral-300">
-                  {cat.icon || '💡'} {cat.name}
-                </option>
-              ))}
-            </optgroup>
-          )}
+          {sortedCategories.map((cat) => (
+            <option key={cat._id} value={cat._id} className="bg-[#14171d] text-white">
+              {cat.icon || '💡'} {cat.name}
+            </option>
+          ))}
         </select>
 
         {effectiveCategoryObj && (
           <p className="text-[11px] text-neutral-400">
-            Selected: <strong className="text-white">{effectiveCategoryObj.name}</strong> (slug: /{effectiveCategoryObj.slug || '-'})
+            Selected: <strong className="text-white">{effectiveCategoryObj.name}</strong>
           </p>
         )}
       </div>
 
-      {/* ── STEP 2: SUBCATEGORY SELECTION ── */}
+      {/* ── SUBCATEGORY SELECTION ── */}
       <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <label className="text-xs font-semibold uppercase tracking-wider text-neutral-300 flex items-center gap-1.5">
-            <Package className="w-3.5 h-3.5 text-[#DC2626]" />
-            <span>Subcategory / Type Option</span>
-          </label>
-          <span className="text-[10px] text-neutral-400 font-mono">Step 2</span>
-        </div>
+        <label className="text-xs font-semibold uppercase tracking-wider text-neutral-300 flex items-center gap-1.5">
+          <Package className="w-3.5 h-3.5 text-[#DC2626]" />
+          <span>Subcategory / Type Option</span>
+          <span className="text-[11px] text-neutral-500 font-normal lowercase">(optional)</span>
+        </label>
 
-        {/* Subcategory Dropdown */}
         <select
           value={effectiveSubSlug}
-          onChange={(e) => {
-            const subSlug = e.target.value;
-            const matched = availableSubcategories.find((s) => s.slug === subSlug);
-            onSelectSubcategory(
-              subSlug,
-              matched ? matched.name : (subSlug ? subSlug.replace(/-/g, ' ').toUpperCase() : '')
-            );
-          }}
+          onChange={(e) => handleSubcategoryChange(e.target.value)}
           disabled={disabled || !effectiveCategoryObj}
           className="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 text-white focus:border-[#DC2626] focus:outline-none transition-all text-sm font-medium cursor-pointer"
         >

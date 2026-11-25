@@ -553,7 +553,17 @@ export const getCatalog = async (req, res, next) => {
     }
 
     // 2. Subcategory Filter
-    const targetSub = (sub || subcategory || '').trim().toLowerCase();
+    let effectiveCategory = category;
+    let targetSub = (sub || subcategory || '').trim().toLowerCase();
+
+    if (effectiveCategory && STANDALONE_SUBCAT_MAP[effectiveCategory]) {
+      const mapping = STANDALONE_SUBCAT_MAP[effectiveCategory];
+      effectiveCategory = mapping.parentSlug;
+      if (!targetSub) {
+        targetSub = mapping.subcategory;
+      }
+    }
+
     if (targetSub && targetSub !== 'all') {
       const matchingSubCat = await Category.findOne({ slug: targetSub }).select('_id');
       const subConditions = [];
@@ -573,6 +583,7 @@ export const getCatalog = async (req, res, next) => {
         subConditions.push({ subcategory: /antic-chandelier|antique-chandelier/i });
         subConditions.push({ subcategoryName: /antic|antique/i });
         subConditions.push({ name: /4012|antic|antique/i });
+        subConditions.push({ sku: /4012|antic|antique/i });
         subConditions.push({ description: /antic|antique/i });
         const antiqueCats = await Category.find({
           slug: { $in: ['antique-chandelier', 'antic-chandelier'] }
@@ -581,9 +592,17 @@ export const getCatalog = async (req, res, next) => {
       } else if (targetSub === 'led-chandelier' || targetSub === 'led chandelier') {
         subConditions.push({ subcategory: /led-chandelier/i });
         subConditions.push({ subcategoryName: /led chandelier/i });
-        subConditions.push({ name: /led chd|led chandelier/i });
+        subConditions.push({ name: /led chd|led chandelier|\bled\b/i });
+        subConditions.push({ sku: /\bled\b/i });
         const ledCats = await Category.find({ slug: 'led-chandelier' }).select('_id');
         ledCats.forEach(lc => subConditions.push({ category: lc._id }));
+      } else if (targetSub === 'glass-chandelier' || targetSub === 'glass chandelier') {
+        subConditions.push({ subcategory: /glass-chandelier/i });
+        subConditions.push({ subcategoryName: /glass/i });
+        subConditions.push({ name: /glass/i });
+        subConditions.push({ sku: /glass/i });
+        const glassCats = await Category.find({ slug: 'glass-chandelier' }).select('_id');
+        glassCats.forEach(gc => subConditions.push({ category: gc._id }));
       } else if (targetSub === 'classic-chandelier' || targetSub === 'classic chandelier') {
         subConditions.push({ subcategory: /classic-chandelier/i });
         subConditions.push({ subcategoryName: /classic/i });
@@ -599,8 +618,8 @@ export const getCatalog = async (req, res, next) => {
     }
 
     // 3. Category Filter
-    if (category && category !== 'all') {
-      const allowedSlugs = resolveCategorySlugs(category);
+    if (effectiveCategory && effectiveCategory !== 'all') {
+      const allowedSlugs = resolveCategorySlugs(effectiveCategory);
       if (allowedSlugs && allowedSlugs.length > 0) {
         if (allowedSlugs.includes('chandelier')) {
           if (!allowedSlugs.includes('antique-chandelier')) allowedSlugs.push('antique-chandelier');

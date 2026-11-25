@@ -38,7 +38,7 @@ export const MASTER_CATEGORY_SLUGS = [
   'spare-part',
 ];
 
-export const resolveCanonicalCategoryAndSub = (categories, rawCategory, rawSubcategory, rawSubcategoryName) => {
+export const resolveCanonicalCategoryAndSub = (categories, rawCategory, rawSubcategory, rawSubcategoryName, productName = '', productSku = '') => {
   if (!Array.isArray(categories)) {
     return {
       categoryId: typeof rawCategory === 'object' ? rawCategory?._id || '' : rawCategory || '',
@@ -69,16 +69,46 @@ export const resolveCanonicalCategoryAndSub = (categories, rawCategory, rawSubca
     }
   }
 
+  // Infer subcategory from product name/sku if subcategory is empty and category is Chandelier
+  const parentCat = categories.find((c) => String(c._id) === String(categoryId));
+  const isChandelier = parentCat?.slug === 'chandelier' || (!parentCat && rawSlug === 'chandelier');
+
+  if (!subcategory && isChandelier) {
+    const combined = `${productName} ${productSku}`.toLowerCase();
+    if (combined.includes('led')) {
+      subcategory = 'led-chandelier';
+      subcategoryName = 'LED Chandelier';
+    } else if (combined.includes('glass')) {
+      subcategory = 'glass-chandelier';
+      subcategoryName = 'Glass Chandelier';
+    } else if (combined.includes('antique') || combined.includes('antic') || combined.includes('4012')) {
+      subcategory = 'antique-chandelier';
+      subcategoryName = 'Antique Chandelier';
+    } else if (combined.includes('e14')) {
+      subcategory = 'e14-chandelier';
+      subcategoryName = 'E14 Chandelier';
+    } else if (combined.includes('profile')) {
+      subcategory = 'profile-chandelier';
+      subcategoryName = 'Profile Chandelier';
+    } else if (combined.includes('fan')) {
+      subcategory = 'fan-chandelier';
+      subcategoryName = 'Fan Chandelier';
+    }
+  }
+
   // Normalize antique/antic
   if (subcategory.includes('antic') || subcategory.includes('antique')) {
     subcategory = 'antique-chandelier';
     subcategoryName = 'Antique Chandelier';
-  } else if (subcategory === 'led-chandelier') {
+  } else if (subcategory === 'led-chandelier' || subcategory === 'led chandelier') {
     subcategory = 'led-chandelier';
     subcategoryName = 'LED Chandelier';
-  } else if (subcategory === 'classic-chandelier') {
+  } else if (subcategory === 'classic-chandelier' || subcategory === 'classic chandelier') {
     subcategory = 'classic-chandelier';
     subcategoryName = 'Classic Chandelier';
+  } else if (subcategory === 'glass-chandelier') {
+    subcategory = 'glass-chandelier';
+    subcategoryName = 'Glass Chandelier';
   }
 
   return { categoryId, subcategory, subcategoryName };

@@ -255,7 +255,9 @@ export const ProductList = () => {
       categories,
       prod.category,
       prod.subcategory,
-      prod.subcategoryName
+      prod.subcategoryName,
+      prod.name || prod.title,
+      prod.sku
     );
 
     setForm({
@@ -823,13 +825,21 @@ export const ProductList = () => {
                             <span className="w-1.5 h-1.5 rounded-full bg-[#DC2626] shrink-0" />
                             <span className="truncate max-w-[140px]">{prod.category?.name || 'Category'}</span>
                           </span>
-                          {prod.subcategoryName || prod.subcategory ? (
-                            <span className="text-[10px] px-2 py-0.5 rounded bg-white/5 text-neutral-300 border border-white/10 w-fit font-mono">
-                              ↳ {prod.subcategoryName || prod.subcategory}
-                            </span>
-                          ) : (
-                            <span className="text-[9.5px] text-neutral-500 italic">General / Direct</span>
-                          )}
+                          {(() => {
+                            const combined = `${prod.name || prod.title || ''} ${prod.sku || ''}`.toLowerCase();
+                            const subDisplay = prod.subcategoryName || prod.subcategory || (
+                              combined.includes('led') ? 'LED Chandelier' :
+                              combined.includes('glass') ? 'Glass Chandelier' :
+                              (combined.includes('antique') || combined.includes('antic') || combined.includes('4012')) ? 'Antique Chandelier' : ''
+                            );
+                            return subDisplay ? (
+                              <span className="text-[10px] px-2 py-0.5 rounded bg-white/5 text-neutral-300 border border-white/10 w-fit font-mono">
+                                ↳ {subDisplay}
+                              </span>
+                            ) : (
+                              <span className="text-[9.5px] text-neutral-500 italic">General / Direct</span>
+                            );
+                          })()}
                         </div>
                       </td>
 
@@ -971,16 +981,10 @@ export const ProductList = () => {
                     categories={categories}
                     selectedCategoryId={form.category}
                     onSelectCategory={(catId) => {
-                      setForm((prev) => {
-                        const newCatObj = categories.find((c) => String(c._id) === String(catId));
-                        const isSubValid = newCatObj?.subcategories?.some((s) => s.slug === prev.subcategory);
-                        return {
-                          ...prev,
-                          category: catId,
-                          subcategory: isSubValid ? prev.subcategory : '',
-                          subcategoryName: isSubValid ? prev.subcategoryName : '',
-                        };
-                      });
+                      setForm((prev) => ({
+                        ...prev,
+                        category: catId,
+                      }));
                     }}
                     selectedSubcategory={form.subcategory}
                     onSelectSubcategory={(subSlug, subName) => {

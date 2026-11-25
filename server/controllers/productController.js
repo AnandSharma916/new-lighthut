@@ -102,8 +102,18 @@ export const getProducts = async (req, res, next) => {
       query.isFeatured = featured === 'true';
     }
 
-    // Filter by subcategory (if provided directly)
-    const targetSub = (subcategory || sub || '').trim().toLowerCase();
+    // Filter by subcategory (if provided directly or via standalone category)
+    let effectiveCategory = category;
+    let targetSub = (subcategory || sub || '').trim().toLowerCase();
+
+    if (effectiveCategory && STANDALONE_SUBCAT_MAP[effectiveCategory]) {
+      const mapping = STANDALONE_SUBCAT_MAP[effectiveCategory];
+      effectiveCategory = mapping.parentSlug;
+      if (!targetSub) {
+        targetSub = mapping.subcategory;
+      }
+    }
+
     if (targetSub && targetSub !== 'all') {
       const cleanSub = targetSub.replace(/[-_]/g, ' ');
       const subConditions = [
@@ -117,29 +127,58 @@ export const getProducts = async (req, res, next) => {
       } else if (targetSub.includes('gate')) {
         subConditions.push({ subcategory: /gate/i });
         subConditions.push({ subcategoryName: /gate/i });
+      } else if (targetSub.includes('antic') || targetSub.includes('antique')) {
+        subConditions.push({ subcategory: /antic-chandelier|antique-chandelier/i });
+        subConditions.push({ subcategoryName: /antic|antique/i });
+        subConditions.push({ name: /4012|antic|antique/i });
+        subConditions.push({ sku: /4012|antic|antique/i });
+      } else if (targetSub === 'led-chandelier' || targetSub === 'led chandelier') {
+        subConditions.push({ subcategory: /led-chandelier/i });
+        subConditions.push({ subcategoryName: /led chandelier/i });
+        subConditions.push({ name: /led chd|led chandelier|\bled\b/i });
+        subConditions.push({ sku: /\bled\b/i });
+      } else if (targetSub === 'glass-chandelier' || targetSub === 'glass chandelier') {
+        subConditions.push({ subcategory: /glass-chandelier/i });
+        subConditions.push({ subcategoryName: /glass/i });
+        subConditions.push({ name: /glass/i });
+        subConditions.push({ sku: /glass/i });
+      } else if (targetSub === 'classic-chandelier' || targetSub === 'classic chandelier') {
+        subConditions.push({ subcategory: /classic-chandelier/i });
+        subConditions.push({ subcategoryName: /classic/i });
       }
       query.$or = query.$or ? [...query.$or, ...subConditions] : subConditions;
     }
 
     // Filter by category (can be slug or category ID)
-    if (category && category !== 'all') {
-      if (category.match(/^[0-9a-fA-F]{24}$/)) {
-        query.category = category;
+    if (effectiveCategory && effectiveCategory !== 'all') {
+      if (effectiveCategory.match(/^[0-9a-fA-F]{24}$/)) {
+        if (query.$or) {
+          query.$and = [{ category: effectiveCategory }, { $or: query.$or }];
+          delete query.$or;
+        } else {
+          query.category = effectiveCategory;
+        }
       } else {
-        const familySlugs = CATEGORY_FAMILY_MAP[category] || [category];
-        const baseSlug = category.replace(/-lamp$/, '').replace(/-light$/, '');
+        const familySlugs = CATEGORY_FAMILY_MAP[effectiveCategory] || [effectiveCategory];
+        const baseSlug = effectiveCategory.replace(/-lamp$/, '').replace(/-light$/, '');
         const matchingCategories = await Category.find({
           $or: [
             { slug: { $in: familySlugs } },
-            { slug: category },
-            { slug: new RegExp(category, 'i') },
+            { slug: effectiveCategory },
+            { slug: new RegExp(effectiveCategory, 'i') },
             { slug: new RegExp(baseSlug, 'i') },
             { name: new RegExp(baseSlug, 'i') },
           ],
         });
 
         if (matchingCategories.length > 0) {
-          query.category = { $in: matchingCategories.map((c) => c._id) };
+          const catIds = matchingCategories.map((c) => c._id);
+          if (query.$or) {
+            query.$and = [{ category: { $in: catIds } }, { $or: query.$or }];
+            delete query.$or;
+          } else {
+            query.category = { $in: catIds };
+          }
         } else {
           return res.status(200).json({
             success: true,
