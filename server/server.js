@@ -120,13 +120,32 @@ const initDB = async () => {
             }
 
             const classicSub = cat.subcategories.find(
-              (s) => s.slug === 'classic-chandelier' || s.slug === 'led-chandelier' || s.name.toLowerCase().includes('classic')
+              (s) => s.slug === 'classic-chandelier' || s.name.toLowerCase().includes('classic')
             );
             if (classicSub) {
-              classicSub.name = 'Led Chandelier';
+              classicSub.name = 'Classic Chandelier';
               classicSub.slug = 'classic-chandelier';
               classicSub.desc = 'Architectural Geometric Rings & Heritage Centerpieces';
               if (!classicSub.image) classicSub.image = '/categories/chandelier.jpg';
+              changed = true;
+            }
+
+            const ledSub = cat.subcategories.find(
+              (s) => s.slug === 'led-chandelier' || s.name.toLowerCase() === 'led chandelier'
+            );
+            if (!ledSub) {
+              cat.subcategories.unshift({
+                name: 'LED Chandelier',
+                slug: 'led-chandelier',
+                image: '/categories/chandelier.jpg',
+                desc: 'Modern LED Rings & Contemporary Sculptural Centerpieces',
+                sortOrder: 0,
+                isActive: true,
+              });
+              changed = true;
+            } else if (ledSub.name !== 'LED Chandelier') {
+              ledSub.name = 'LED Chandelier';
+              ledSub.slug = 'led-chandelier';
               changed = true;
             }
           }
@@ -182,14 +201,45 @@ const initDB = async () => {
         });
       }
 
-      // 2. Ensure standalone Led Chandelier
-      const ledChandelierCats = await Category.find({ slug: { $in: ['classic-chandelier', 'led-chandelier'] } });
-      for (const lcc of ledChandelierCats) {
-        if (lcc.name !== 'Led Chandelier') {
-          lcc.name = 'Led Chandelier';
-          lcc.seoTitle = 'Led Chandeliers | LightHut';
-          await lcc.save();
-        }
+      // 2. Ensure standalone LED Chandelier & Classic Chandelier
+      let standaloneLed = await Category.findOne({ slug: 'led-chandelier' });
+      if (!standaloneLed) {
+        standaloneLed = await Category.create({
+          name: 'LED Chandelier',
+          slug: 'led-chandelier',
+          icon: '✨',
+          tag: 'Modern LED Rings & Centerpieces',
+          description: 'Contemporary architectural LED chandeliers featuring geometric silhouettes and integrated high-efficiency LED modules.',
+          image: '/categories/chandelier.jpg',
+          sortOrder: 20,
+          isActive: true,
+          seoTitle: 'LED Chandeliers | LightHut',
+          seoDescription: 'Shop modern architectural LED chandeliers.',
+          subcategories: [],
+        });
+      } else if (standaloneLed.name !== 'LED Chandelier') {
+        standaloneLed.name = 'LED Chandelier';
+        await standaloneLed.save();
+      }
+
+      let standaloneClassic = await Category.findOne({ slug: 'classic-chandelier' });
+      if (!standaloneClassic) {
+        standaloneClassic = await Category.create({
+          name: 'Classic Chandelier',
+          slug: 'classic-chandelier',
+          icon: '✨',
+          tag: 'Heritage & Grand Statement Centerpieces',
+          description: 'Timeless classic and architectural chandeliers crafted for luxury dining, living rooms, and lobbies.',
+          image: '/categories/chandelier.jpg',
+          sortOrder: 21,
+          isActive: true,
+          seoTitle: 'Classic Chandeliers | LightHut',
+          seoDescription: 'Shop handcrafted classic chandeliers in crystal, brass, and artisanal finishes.',
+          subcategories: [],
+        });
+      } else if (standaloneClassic.name !== 'Classic Chandelier') {
+        standaloneClassic.name = 'Classic Chandelier';
+        await standaloneClassic.save();
       }
 
       // 3. Migrate Products assigned to standalone Antique Chandelier or with legacy 'antic' slugs
@@ -223,10 +273,29 @@ const initDB = async () => {
           console.log(`[Server] Updated ${updatedAnticSubs.modifiedCount} product(s) to subcategory antique-chandelier.`);
         }
 
-        // Standardize Led Chandelier subcategory names
+        // Assign products with LED in title under Chandelier that have an empty subcategory to led-chandelier
+        const remappedLedProducts = await Product.updateMany(
+          {
+            category: chandelierParent._id,
+            name: { $regex: /LED/i },
+            $or: [{ subcategory: '' }, { subcategory: { $exists: false } }, { subcategory: null }]
+          },
+          { $set: { subcategory: 'led-chandelier', subcategoryName: 'LED Chandelier' } }
+        );
+        if (remappedLedProducts.modifiedCount > 0) {
+          console.log(`[Server] Assigned ${remappedLedProducts.modifiedCount} LED chandelier product(s) to subcategory led-chandelier.`);
+        }
+
+        // Standardize Classic Chandelier subcategory names
         await Product.updateMany(
-          { subcategory: { $in: ['classic-chandelier', 'led-chandelier'] } },
-          { $set: { subcategory: 'classic-chandelier', subcategoryName: 'Led Chandelier' } }
+          { subcategory: 'classic-chandelier' },
+          { $set: { subcategoryName: 'Classic Chandelier' } }
+        );
+
+        // Standardize LED Chandelier subcategory names
+        await Product.updateMany(
+          { subcategory: 'led-chandelier' },
+          { $set: { subcategoryName: 'LED Chandelier' } }
         );
 
         // Replace 'Antic' with 'Antique' in product titles

@@ -79,7 +79,13 @@ export const PRODUCT_CATEGORIES_DATA = [
     count: 12,
     sub: [
       {
-        name: 'Led Chandelier',
+        name: 'LED Chandelier',
+        slug: 'led-chandelier',
+        image: '/categories/chandelier.jpg',
+        desc: 'Modern LED Rings & Contemporary Sculptural Centerpieces',
+      },
+      {
+        name: 'Classic Chandelier',
         slug: 'classic-chandelier',
         image: '/categories/chandelier.jpg',
         desc: 'Architectural Geometric Rings & Heritage Centerpieces',

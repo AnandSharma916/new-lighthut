@@ -222,7 +222,8 @@ export const Catalog = () => {
     if (!currentSub) return products;
     const target = currentSub.toLowerCase();
     const isAntique = target.includes('antic') || target.includes('antique');
-    const isLedChandelier = target.includes('classic') || target.includes('led-chandelier') || target === 'led chandelier';
+    const isLedChandelier = target === 'led-chandelier' || target === 'led chandelier';
+    const isClassicChandelier = target.includes('classic');
 
     const filtered = products.filter((p) => {
       const pSub = String(p.subcategory || p.subCategory || '').toLowerCase();
@@ -245,12 +246,19 @@ export const Catalog = () => {
       }
       if (isLedChandelier) {
         return (
+          pSub === 'led-chandelier' ||
+          pSub.includes('led') ||
+          pName.includes('led chd') ||
+          pName.includes('led') ||
+          pSlug.includes('led')
+        );
+      }
+      if (isClassicChandelier) {
+        return (
           pSub.includes('classic') ||
-          pSub.includes('led-chandelier') ||
           pCat.includes('classic') ||
-          pCat.includes('led-chandelier') ||
           pSlug.includes('classic') ||
-          pSlug.includes('led-chandelier')
+          pName.includes('classic')
         );
       }
       return (
@@ -387,15 +395,21 @@ export const Catalog = () => {
         sl.includes('antic')
       );
     }
-    if (target.includes('classic') && target.includes('chandelier')) {
+    if (target === 'led-chandelier' || target === 'led chandelier') {
+      return (
+        s === 'led-chandelier' ||
+        s.includes('led') ||
+        n.includes('led chd') ||
+        n.includes('led') ||
+        sl.includes('led')
+      );
+    }
+    if (target.includes('classic')) {
       return (
         s.includes('classic') ||
-        s.includes('led-chandelier') ||
         c.includes('classic') ||
-        c.includes('led-chandelier') ||
         n.includes('classic') ||
-        sl.includes('classic') ||
-        sl.includes('led-chandelier')
+        sl.includes('classic')
       );
     }
     if (target.includes('gate')) {
@@ -406,9 +420,6 @@ export const Catalog = () => {
     }
     if (target.includes('profile')) {
       return s.includes('profile') || c.includes('profile') || n.includes('profile') || sl.includes('profile');
-    }
-    if (target.includes('classic') && target.includes('chandelier')) {
-      return s.includes('classic') || s.includes('led-chandelier') || c.includes('classic') || n.includes('classic') || sl.includes('classic') || sl.includes('led-chandelier');
     }
     if (target.includes('hanging') || target.includes('pendant')) {
       return s.includes('hanging') || s.includes('pendant') || c.includes('hanging') || n.includes('hanging') || sl.includes('hanging');
@@ -433,8 +444,8 @@ export const Catalog = () => {
       subFilterOverride === 'all'
         ? ''
         : subFilterOverride !== null
-        ? subFilterOverride
-        : currentSub || '';
+          ? subFilterOverride
+          : currentSub || '';
 
     const isAllCategories = !currentCategory || currentCategory === 'all';
 
@@ -448,8 +459,8 @@ export const Catalog = () => {
     const categoryTitle = isAllCategories
       ? 'Complete Architectural Lighting Catalog'
       : effectiveSub
-      ? `${activeCategoryData?.name || 'Architectural Lighting'} - ${subDisplayName}`
-      : activeCategoryData?.name || 'All Architectural Lighting';
+        ? `${activeCategoryData?.name || 'Architectural Lighting'} - ${subDisplayName}`
+        : activeCategoryData?.name || 'All Architectural Lighting';
 
     // Canonical Master Categories in optimal architectural presentation order
     const CANONICAL_CATEGORIES = [
@@ -563,9 +574,9 @@ export const Catalog = () => {
 
       const fullImgObj = !explicitCover && Array.isArray(p.images)
         ? p.images.find((img) => {
-            const u = typeof img === 'string' ? img : img.url || '';
-            return u.includes('-full') || (img.alt && img.alt.toLowerCase().includes('installed'));
-          })
+          const u = typeof img === 'string' ? img : img.url || '';
+          return u.includes('-full') || (img.alt && img.alt.toLowerCase().includes('installed'));
+        })
         : null;
       const fullUrl = typeof fullImgObj === 'string' ? fullImgObj : fullImgObj?.url;
 
@@ -689,9 +700,9 @@ export const Catalog = () => {
       if (!rawTag) rawTag = activeCategoryData?.name || 'Architectural Lighting';
       const subTag = rawTag.includes('-')
         ? rawTag
-            .split('-')
-            .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-            .join(' ')
+          .split('-')
+          .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+          .join(' ')
         : rawTag;
 
       return `
@@ -1220,7 +1231,7 @@ export const Catalog = () => {
 
   return (
     <div className="pt-24 pb-20 bg-[#f8fafc] min-h-screen">
-      
+
       {/* ── Breadcrumb & Top Navigation Bar ── */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-2">
         <nav className="flex items-center gap-2 text-xs text-neutral-500 py-1" aria-label="Breadcrumb">
@@ -1235,9 +1246,8 @@ export const Catalog = () => {
               setViewMode('categories');
               updateQuery({ category: 'all' });
             }}
-            className={`cursor-pointer transition-colors ${
-              currentCategory === 'all' ? 'text-neutral-900 font-semibold' : 'hover:text-neutral-900'
-            }`}
+            className={`cursor-pointer transition-colors ${currentCategory === 'all' ? 'text-neutral-900 font-semibold' : 'hover:text-neutral-900'
+              }`}
           >
             Catalog
           </button>
@@ -1304,12 +1314,12 @@ export const Catalog = () => {
                   {downloadingPdf
                     ? 'Preparing Complete PDF...'
                     : currentSub && selectedSubDef
-                    ? `Download ${selectedSubDef.name} Catalog (PDF)`
-                    : currentSub
-                    ? `Download ${currentSub.replace(/-/g, ' ').toUpperCase()} Catalog (PDF)`
-                    : currentCategory !== 'all'
-                    ? `Download ${activeCategoryData.name} Catalog (PDF)`
-                    : 'Download Complete Catalog (All Categories PDF)'}
+                      ? `Download ${selectedSubDef.name} Catalog (PDF)`
+                      : currentSub
+                        ? `Download ${currentSub.replace(/-/g, ' ').toUpperCase()} Catalog (PDF)`
+                        : currentCategory !== 'all'
+                          ? `Download ${activeCategoryData.name} Catalog (PDF)`
+                          : 'Download Complete Catalog (All Categories PDF)'}
                 </span>
               </button>
 
@@ -1327,11 +1337,10 @@ export const Catalog = () => {
                         type="button"
                         onClick={() => handleDownloadCatalog(subItem.slug)}
                         disabled={downloadingPdf}
-                        className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition-all flex items-center gap-1.5 cursor-pointer shadow-sm ${
-                          isSubActive
+                        className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition-all flex items-center gap-1.5 cursor-pointer shadow-sm ${isSubActive
                             ? 'bg-white text-[#DC2626] border-white font-black scale-102 ring-2 ring-[#DC2626]/50'
                             : 'bg-black/60 hover:bg-black/80 text-white border-white/30 hover:border-white'
-                        }`}
+                          }`}
                         title={`Download official PDF specification catalog for ${subItem.name} only`}
                       >
                         <Download className="w-3 h-3 text-[#DC2626]" />
@@ -1364,11 +1373,10 @@ export const Catalog = () => {
               setViewMode('categories');
               updateQuery({ category: 'all', sub: undefined });
             }}
-            className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-300 cursor-pointer ${
-              currentCategory === 'all'
+            className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-300 cursor-pointer ${currentCategory === 'all'
                 ? 'bg-neutral-900 text-white shadow-md scale-102 font-bold'
                 : 'bg-white hover:bg-neutral-100 text-neutral-700 border border-neutral-200/80 shadow-2xs'
-            }`}
+              }`}
           >
             All Categories ({allTotal || totalProducts})
           </button>
@@ -1383,11 +1391,10 @@ export const Catalog = () => {
                 key={cat.slug || cat._id}
                 type="button"
                 onClick={() => updateQuery({ category: cat.slug, sub: undefined })}
-                className={`px-4 py-2 rounded-full text-xs font-medium whitespace-nowrap transition-all duration-300 cursor-pointer flex items-center gap-1.5 ${
-                  isSelected
+                className={`px-4 py-2 rounded-full text-xs font-medium whitespace-nowrap transition-all duration-300 cursor-pointer flex items-center gap-1.5 ${isSelected
                     ? 'bg-[#DC2626] text-white shadow-md scale-102 font-bold'
                     : 'bg-white hover:bg-neutral-100 text-neutral-700 border border-neutral-200/80 shadow-2xs'
-                }`}
+                  }`}
               >
                 <span>{cat.name}</span>
                 <span className={`text-[10px] font-mono ${isSelected ? 'text-white/90' : 'text-neutral-400'}`}>
@@ -1413,11 +1420,10 @@ export const Catalog = () => {
               <button
                 type="button"
                 onClick={() => updateQuery({ sub: undefined })}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
-                  !currentSub
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${!currentSub
                     ? 'bg-neutral-900 text-white shadow-xs'
                     : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-700'
-                }`}
+                  }`}
               >
                 All {activeCatConfig.name}s
               </button>
@@ -1428,11 +1434,10 @@ export const Catalog = () => {
                 return (
                   <div
                     key={subItem.slug}
-                    className={`flex items-center gap-1.5 p-1 pr-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 border ${
-                      isSubSelected
+                    className={`flex items-center gap-1.5 p-1 pr-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 border ${isSubSelected
                         ? 'bg-white border-[#DC2626] text-[#DC2626] shadow-sm ring-2 ring-[#DC2626]/20 font-bold'
                         : 'bg-white border-neutral-200 hover:border-neutral-300 text-neutral-700 hover:bg-neutral-50'
-                    }`}
+                      }`}
                   >
                     <button
                       type="button"
@@ -1501,18 +1506,16 @@ export const Catalog = () => {
                 type="button"
                 id="catalog-cascading-dropdown-btn"
                 onClick={() => setCatalogDropdownOpen(!catalogDropdownOpen)}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all shadow-sm cursor-pointer ${
-                  catalogDropdownOpen
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all shadow-sm cursor-pointer ${catalogDropdownOpen
                     ? 'bg-[#DC2626] text-white border border-[#DC2626]'
                     : 'bg-white hover:bg-neutral-50 border border-neutral-300 text-neutral-700 hover:text-neutral-900'
-                }`}
+                  }`}
               >
                 <Layers className="w-3.5 h-3.5 text-[#DC2626]" />
                 <span>Hierarchy</span>
                 <ChevronDown
-                  className={`w-3.5 h-3.5 transition-transform duration-200 ${
-                    catalogDropdownOpen ? 'rotate-180 text-white' : ''
-                  }`}
+                  className={`w-3.5 h-3.5 transition-transform duration-200 ${catalogDropdownOpen ? 'rotate-180 text-white' : ''
+                    }`}
                 />
               </button>
 
@@ -1577,8 +1580,10 @@ export const Catalog = () => {
                   (currentSub.includes('antic') || currentSub.includes('antique')
                     ? 'ANTIQUE CHANDELIER'
                     : currentSub.includes('classic')
-                    ? 'LED CHANDELIER'
-                    : currentSub.replace(/-/g, ' ').toUpperCase())}
+                      ? 'CLASSIC CHANDELIER'
+                      : currentSub.includes('led')
+                        ? 'LED CHANDELIER'
+                        : currentSub.replace(/-/g, ' ').toUpperCase())}
                 <button
                   type="button"
                   onClick={() => updateQuery({ sub: undefined })}
@@ -1629,7 +1634,7 @@ export const Catalog = () => {
       {/* ── Main Layout: Sidebar + Product Grid ── */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          
+
           {/* Desktop Left Filter Sidebar */}
           <aside className="hidden lg:block lg:col-span-3 space-y-6 sticky top-28">
             <div className="p-6 rounded-2xl bg-white border border-neutral-200 space-y-6 shadow-sm">
@@ -1660,17 +1665,15 @@ export const Catalog = () => {
                     setViewMode('categories');
                     updateQuery({ category: 'all', sub: undefined });
                   }}
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
-                    currentCategory === 'all'
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${currentCategory === 'all'
                       ? 'bg-[#DC2626] text-white shadow-sm'
                       : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900'
-                  }`}
+                    }`}
                 >
                   <span>All Categories</span>
                   <span
-                    className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
-                      currentCategory === 'all' ? 'bg-white/20 text-white' : 'text-neutral-500 bg-neutral-100'
-                    }`}
+                    className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${currentCategory === 'all' ? 'bg-white/20 text-white' : 'text-neutral-500 bg-neutral-100'
+                      }`}
                   >
                     {allTotal || totalProducts}
                   </span>
@@ -1689,21 +1692,19 @@ export const Catalog = () => {
                       <button
                         type="button"
                         onClick={() => updateQuery({ category: cat.slug, sub: undefined })}
-                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
-                          isParentActive
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${isParentActive
                             ? 'bg-[#DC2626] text-white shadow-sm font-bold'
                             : isChildActive
-                            ? 'bg-neutral-100 text-[#DC2626] font-bold'
-                            : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900'
-                        }`}
+                              ? 'bg-neutral-100 text-[#DC2626] font-bold'
+                              : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900'
+                          }`}
                       >
                         <span className="truncate text-left">{cat.name}</span>
                         <span
-                          className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
-                            isParentActive
+                          className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${isParentActive
                               ? 'bg-white/20 text-white'
                               : 'text-neutral-500 bg-neutral-100'
-                          }`}
+                            }`}
                         >
                           {count}
                         </span>
@@ -1719,11 +1720,10 @@ export const Catalog = () => {
                                 key={sub.slug}
                                 type="button"
                                 onClick={() => updateQuery({ category: cat.slug, sub: sub.slug })}
-                                className={`w-full flex items-center justify-between p-1.5 rounded-xl text-[11px] transition-all cursor-pointer ${
-                                  isSubSelected
+                                className={`w-full flex items-center justify-between p-1.5 rounded-xl text-[11px] transition-all cursor-pointer ${isSubSelected
                                     ? 'bg-red-50 text-[#DC2626] font-bold border border-red-200/80 shadow-2xs'
                                     : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50'
-                                }`}
+                                  }`}
                               >
                                 <div className="flex items-center gap-2 truncate">
                                   {sub.image && (
@@ -1797,11 +1797,10 @@ export const Catalog = () => {
                     <button
                       type="button"
                       onClick={() => setViewMode('categories')}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                        viewMode === 'categories'
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${viewMode === 'categories'
                           ? 'bg-white text-[#DC2626] shadow-xs'
                           : 'text-neutral-600 hover:text-neutral-900'
-                      }`}
+                        }`}
                     >
                       <LayoutGrid className="w-3.5 h-3.5 text-[#DC2626]" />
                       <span>Collections ({mainCategories.length})</span>
@@ -1809,11 +1808,10 @@ export const Catalog = () => {
                     <button
                       type="button"
                       onClick={() => setViewMode('products')}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                        viewMode === 'products'
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${viewMode === 'products'
                           ? 'bg-white text-[#DC2626] shadow-xs'
                           : 'text-neutral-600 hover:text-neutral-900'
-                      }`}
+                        }`}
                     >
                       <Grid className="w-3.5 h-3.5" />
                       <span>All Fixtures ({allTotal || totalProducts})</span>
@@ -2017,11 +2015,10 @@ export const Catalog = () => {
                           key={p}
                           type="button"
                           onClick={() => updateQuery({ page: p })}
-                          className={`w-9 h-9 rounded-xl text-xs font-mono font-bold transition-all shadow-sm cursor-pointer ${
-                            currentPage === p
+                          className={`w-9 h-9 rounded-xl text-xs font-mono font-bold transition-all shadow-sm cursor-pointer ${currentPage === p
                               ? 'bg-[#DC2626] text-white shadow'
                               : 'bg-white text-neutral-600 hover:text-neutral-900 border border-neutral-300 hover:bg-neutral-50'
-                          }`}
+                            }`}
                         >
                           {p}
                         </button>
@@ -2102,11 +2099,10 @@ export const Catalog = () => {
                       updateQuery({ category: 'all', sub: undefined });
                       setMobileFilterOpen(false);
                     }}
-                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold cursor-pointer ${
-                      currentCategory === 'all'
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold cursor-pointer ${currentCategory === 'all'
                         ? 'bg-[#DC2626] text-white'
                         : 'text-neutral-600 hover:bg-neutral-100'
-                    }`}
+                      }`}
                   >
                     <span>All Categories</span>
                     <span>({allTotal || totalProducts})</span>
@@ -2125,11 +2121,10 @@ export const Catalog = () => {
                             updateQuery({ category: cat.slug, sub: undefined });
                             if (isSelected) setMobileFilterOpen(false);
                           }}
-                          className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold cursor-pointer ${
-                            isSelected
+                          className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold cursor-pointer ${isSelected
                               ? 'bg-[#DC2626] text-white font-bold shadow-xs'
                               : 'text-neutral-600 hover:bg-neutral-100'
-                          }`}
+                            }`}
                         >
                           <span className="truncate">{cat.name}</span>
                           <span className="text-[10px] font-mono opacity-80">
@@ -2150,11 +2145,10 @@ export const Catalog = () => {
                                     updateQuery({ category: cat.slug, sub: isSubSelected ? undefined : sub.slug });
                                     setMobileFilterOpen(false);
                                   }}
-                                  className={`w-full flex items-center justify-between p-1.5 rounded-xl text-[11px] transition-all cursor-pointer ${
-                                    isSubSelected
+                                  className={`w-full flex items-center justify-between p-1.5 rounded-xl text-[11px] transition-all cursor-pointer ${isSubSelected
                                       ? 'bg-red-50 text-[#DC2626] font-bold border border-red-200 shadow-2xs'
                                       : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50'
-                                  }`}
+                                    }`}
                                 >
                                   <div className="flex items-center gap-2 truncate">
                                     {sub.image && (

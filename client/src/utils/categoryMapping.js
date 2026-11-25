@@ -1,8 +1,8 @@
 export const STANDALONE_PARENT_MAP = {
   'antique-chandelier': { parentSlug: 'chandelier', subcategory: 'antique-chandelier', subcategoryName: 'Antique Chandelier' },
   'antic-chandelier': { parentSlug: 'chandelier', subcategory: 'antique-chandelier', subcategoryName: 'Antique Chandelier' },
-  'classic-chandelier': { parentSlug: 'chandelier', subcategory: 'classic-chandelier', subcategoryName: 'Led Chandelier' },
-  'led-chandelier': { parentSlug: 'chandelier', subcategory: 'classic-chandelier', subcategoryName: 'Led Chandelier' },
+  'classic-chandelier': { parentSlug: 'chandelier', subcategory: 'classic-chandelier', subcategoryName: 'Classic Chandelier' },
+  'led-chandelier': { parentSlug: 'chandelier', subcategory: 'led-chandelier', subcategoryName: 'LED Chandelier' },
   'e14-chandelier': { parentSlug: 'chandelier', subcategory: 'e14-chandelier', subcategoryName: 'E14 Chandelier' },
   'profile-chandelier': { parentSlug: 'chandelier', subcategory: 'profile-chandelier', subcategoryName: 'Profile Chandelier' },
   'glass-chandelier': { parentSlug: 'chandelier', subcategory: 'glass-chandelier', subcategoryName: 'Glass Chandelier' },
@@ -74,8 +74,11 @@ export const resolveCanonicalCategoryAndSub = (categories, rawCategory, rawSubca
     subcategory = 'antique-chandelier';
     subcategoryName = 'Antique Chandelier';
   } else if (subcategory === 'led-chandelier') {
+    subcategory = 'led-chandelier';
+    subcategoryName = 'LED Chandelier';
+  } else if (subcategory === 'classic-chandelier') {
     subcategory = 'classic-chandelier';
-    subcategoryName = 'Led Chandelier';
+    subcategoryName = 'Classic Chandelier';
   }
 
   return { categoryId, subcategory, subcategoryName };

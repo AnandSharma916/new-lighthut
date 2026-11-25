@@ -19,7 +19,8 @@ export const MASTER_CATEGORIES = [
     productsCount: 9,
     total: 9,
     subcategories: [
-      { name: 'Led Chandelier', slug: 'classic-chandelier', count: 2, image: '/categories/chandelier.jpg' },
+      { name: 'LED Chandelier', slug: 'led-chandelier', count: 6, image: '/categories/chandelier.jpg' },
+      { name: 'Classic Chandelier', slug: 'classic-chandelier', count: 5, image: '/categories/chandelier.jpg' },
       { name: 'E14 Chandelier', slug: 'e14-chandelier', count: 2, image: '/categories/e14-chandelier.jpg' },
       { name: 'Profile Chandelier', slug: 'profile-chandelier', count: 2, image: '/categories/profile-chandelier.jpg' },
       { name: 'Glass Chandelier', slug: 'glass-chandelier', count: 2, image: '/categories/glass-chandelier.jpg' },

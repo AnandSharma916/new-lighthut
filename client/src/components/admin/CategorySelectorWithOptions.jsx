@@ -30,8 +30,6 @@ export const CategorySelectorWithOptions = ({
   // 3. Normalize subcategory slug if it contains 'antic'
   if (effectiveSubSlug.includes('antic') || effectiveSubSlug.includes('antique')) {
     effectiveSubSlug = 'antique-chandelier';
-  } else if (effectiveSubSlug === 'led-chandelier') {
-    effectiveSubSlug = 'classic-chandelier';
   }
 
   // 4. Available subcategories for the resolved category

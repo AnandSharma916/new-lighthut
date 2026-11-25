@@ -53,7 +53,8 @@ const LIGHTING_COLLECTIONS = [
     image: '/categories/chandelier.jpg',
     description: 'Magnificent multi-tier chandeliers spanning modern LED rings, E14 crystals, linear profiles, Italian Murano glass, modern branches, antique fixtures, and fan chandeliers.',
     fixtures: [
-      'Led Chandelier',
+      'LED Chandelier',
+      'Classic Chandelier',
       'E14 Chandelier',
       'Profile Chandelier',
       'Glass Chandelier',

@@ -20,8 +20,8 @@ const CATEGORY_FAMILY_MAP = {
     'fan-chandelier',
     'ceiling-chandelier',
   ],
-  'classic-chandelier': ['classic-chandelier', 'led-chandelier', 'chandelier'],
-  'led-chandelier': ['classic-chandelier', 'led-chandelier', 'chandelier'],
+  'classic-chandelier': ['classic-chandelier', 'chandelier'],
+  'led-chandelier': ['led-chandelier', 'chandelier'],
   'antique-chandelier': ['antique-chandelier', 'antic-chandelier', 'chandelier'],
   'antic-chandelier': ['antique-chandelier', 'antic-chandelier', 'chandelier'],
   'double-height': ['double-height', 'crystal-chandelier', 'modern-double-height-chandelier'],
@@ -37,8 +37,8 @@ const CATEGORY_FAMILY_MAP = {
 export const STANDALONE_SUBCAT_MAP = {
   'antique-chandelier': { parentSlug: 'chandelier', subcategory: 'antique-chandelier', subcategoryName: 'Antique Chandelier' },
   'antic-chandelier': { parentSlug: 'chandelier', subcategory: 'antique-chandelier', subcategoryName: 'Antique Chandelier' },
-  'classic-chandelier': { parentSlug: 'chandelier', subcategory: 'classic-chandelier', subcategoryName: 'Led Chandelier' },
-  'led-chandelier': { parentSlug: 'chandelier', subcategory: 'classic-chandelier', subcategoryName: 'Led Chandelier' },
+  'classic-chandelier': { parentSlug: 'chandelier', subcategory: 'classic-chandelier', subcategoryName: 'Classic Chandelier' },
+  'led-chandelier': { parentSlug: 'chandelier', subcategory: 'led-chandelier', subcategoryName: 'LED Chandelier' },
   'e14-chandelier': { parentSlug: 'chandelier', subcategory: 'e14-chandelier', subcategoryName: 'E14 Chandelier' },
   'profile-chandelier': { parentSlug: 'chandelier', subcategory: 'profile-chandelier', subcategoryName: 'Profile Chandelier' },
   'glass-chandelier': { parentSlug: 'chandelier', subcategory: 'glass-chandelier', subcategoryName: 'Glass Chandelier' },
@@ -543,9 +543,12 @@ export const createProduct = async (req, res, next) => {
     if (finalSubcategory && (finalSubcategory.includes('antic') || finalSubcategory.includes('antique'))) {
       finalSubcategory = 'antique-chandelier';
       finalSubcategoryName = 'Antique Chandelier';
-    } else if (finalSubcategory === 'classic-chandelier' || finalSubcategory === 'led-chandelier') {
+    } else if (finalSubcategory === 'led-chandelier' || finalSubcategory === 'led chandelier') {
+      finalSubcategory = 'led-chandelier';
+      finalSubcategoryName = 'LED Chandelier';
+    } else if (finalSubcategory === 'classic-chandelier' || finalSubcategory === 'classic chandelier') {
       finalSubcategory = 'classic-chandelier';
-      finalSubcategoryName = 'Led Chandelier';
+      finalSubcategoryName = 'Classic Chandelier';
     }
 
     // Check SKU uniqueness only if SKU is provided
@@ -742,9 +745,12 @@ export const updateProduct = async (req, res, next) => {
       if (updatedSub && (updatedSub.includes('antic') || updatedSub.includes('antique'))) {
         updatedSub = 'antique-chandelier';
         updatedSubName = 'Antique Chandelier';
-      } else if (updatedSub === 'classic-chandelier' || updatedSub === 'led-chandelier') {
+      } else if (updatedSub === 'led-chandelier' || updatedSub === 'led chandelier') {
+        updatedSub = 'led-chandelier';
+        updatedSubName = 'LED Chandelier';
+      } else if (updatedSub === 'classic-chandelier' || updatedSub === 'classic chandelier') {
         updatedSub = 'classic-chandelier';
-        updatedSubName = 'Led Chandelier';
+        updatedSubName = 'Classic Chandelier';
       }
 
       product.subcategory = updatedSub;
