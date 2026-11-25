@@ -149,6 +149,7 @@ export const ProductCard = ({ product, hidePricing = false }) => {
   const explicitCover =
     product.images?.find((img) => img.isCover)?.url ||
     product.mainImage ||
+    product.primaryImage ||
     product.images?.[0]?.url;
 
   // 2. Fall back to authentic full view if available

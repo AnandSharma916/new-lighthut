@@ -228,14 +228,23 @@ export const ProductDetail = () => {
     });
   }
 
-  // Products without uploaded images fall back to their category cover or neutral placeholder
+  // Products without uploaded gallery images fall back to mainImage, category cover, or neutral placeholder
   if (rawImages.length === 0) {
-    rawImages.push({
-      url: CATEGORY_BANNER_MAP[catKey] || NEUTRAL_FALLBACK_IMAGE,
-      label: 'Primary Studio View',
-      tag: 'Official Specimen',
-      alt: product.name,
-    });
+    if (product.mainImage) {
+      rawImages.push({
+        url: product.mainImage,
+        label: 'Primary Studio View',
+        tag: 'Primary Showcase',
+        alt: product.name,
+      });
+    } else {
+      rawImages.push({
+        url: CATEGORY_BANNER_MAP[catKey] || NEUTRAL_FALLBACK_IMAGE,
+        label: 'Primary Studio View',
+        tag: 'Official Specimen',
+        alt: product.name,
+      });
+    }
   }
 
   const images = rawImages;

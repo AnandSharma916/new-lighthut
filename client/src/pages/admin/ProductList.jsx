@@ -202,8 +202,9 @@ export const ProductList = () => {
         const alt = typeof img === 'object' ? (img.alt || prod.name) : prod.name;
         addUnique(url, isCover, alt);
       });
-    } else if (prod.mainImage) {
-      addUnique(prod.mainImage, true, prod.name || 'Cover Photo');
+    }
+    if (prod.mainImage && !seenUrls.has(prod.mainImage.trim().toLowerCase())) {
+      addUnique(prod.mainImage, productImages.length === 0, prod.name || 'Cover Photo');
     }
 
     // If there is any real non-placeholder image, drop all placeholder images

@@ -129,8 +129,9 @@ export const ProductForm = () => {
               const alt = typeof img === 'object' ? (img.alt || p.name) : p.name;
               addUnique(url, isCover, alt);
             });
-          } else if (p.mainImage) {
-            addUnique(p.mainImage, true, p.name || 'Cover Image');
+          }
+          if (p.mainImage && !seenUrls.has(p.mainImage.trim().toLowerCase())) {
+            addUnique(p.mainImage, productImages.length === 0, p.name || 'Cover Image');
           }
 
           if (productImages.length > 0 && !productImages.some((img) => img.isCover)) {

@@ -1,5 +1,6 @@
 import Product from '../models/Product.js';
 import Category from '../models/Category.js';
+import { STANDALONE_SUBCAT_MAP } from './productController.js';
 
 /**
  * ============================================================================
@@ -344,7 +345,20 @@ function resolveCategorySlugs(categoryQuery) {
       parentGroup.subcategories.forEach((sub) => slugs.push(sub.slug));
     }
     if (categoryQuery === 'chandelier') {
-      slugs.push('antique-chandelier', 'antic-chandelier', 'classic-chandelier', 'led-chandelier');
+      slugs.push(
+        'antique-chandelier',
+        'antic-chandelier',
+        'classic-chandelier',
+        'led-chandelier',
+        'glass-chandelier',
+        'crystal-chandelier',
+        'italian-chandelier',
+        'modern-chandelier',
+        'profile-chandelier',
+        'e14-chandelier',
+        'fan-chandelier',
+        'ceiling-chandelier'
+      );
     }
     return [...new Set(slugs)];
   }
@@ -608,6 +622,31 @@ export const getCatalog = async (req, res, next) => {
         subConditions.push({ subcategoryName: /classic/i });
         const classicCats = await Category.find({ slug: 'classic-chandelier' }).select('_id');
         classicCats.forEach(cc => subConditions.push({ category: cc._id }));
+      } else if (targetSub === 'italian-chandelier' || targetSub === 'italian chandelier') {
+        subConditions.push({ subcategory: /italian-chandelier/i });
+        subConditions.push({ subcategoryName: /italian/i });
+        subConditions.push({ name: /italian/i });
+        subConditions.push({ sku: /italian/i });
+        const italianCats = await Category.find({ slug: 'italian-chandelier' }).select('_id');
+        italianCats.forEach(ic => subConditions.push({ category: ic._id }));
+      } else if (targetSub === 'modern-chandelier' || targetSub === 'modern chandelier') {
+        subConditions.push({ subcategory: /modern-chandelier/i });
+        subConditions.push({ subcategoryName: /modern/i });
+        subConditions.push({ name: /modern/i });
+        const modernCats = await Category.find({ slug: 'modern-chandelier' }).select('_id');
+        modernCats.forEach(mc => subConditions.push({ category: mc._id }));
+      } else if (targetSub === 'profile-chandelier' || targetSub === 'profile chandelier') {
+        subConditions.push({ subcategory: /profile-chandelier/i });
+        subConditions.push({ subcategoryName: /profile/i });
+        subConditions.push({ name: /profile/i });
+        const profileCats = await Category.find({ slug: 'profile-chandelier' }).select('_id');
+        profileCats.forEach(pc => subConditions.push({ category: pc._id }));
+      } else if (targetSub === 'crystal-chandelier' || targetSub === 'crystal chandelier') {
+        subConditions.push({ subcategory: /crystal-chandelier/i });
+        subConditions.push({ subcategoryName: /crystal/i });
+        subConditions.push({ name: /crystal/i });
+        const crystalCats = await Category.find({ slug: 'crystal-chandelier' }).select('_id');
+        crystalCats.forEach(cc => subConditions.push({ category: cc._id }));
       }
 
       if (matchingSubCat) {
@@ -622,10 +661,22 @@ export const getCatalog = async (req, res, next) => {
       const allowedSlugs = resolveCategorySlugs(effectiveCategory);
       if (allowedSlugs && allowedSlugs.length > 0) {
         if (allowedSlugs.includes('chandelier')) {
-          if (!allowedSlugs.includes('antique-chandelier')) allowedSlugs.push('antique-chandelier');
-          if (!allowedSlugs.includes('antic-chandelier')) allowedSlugs.push('antic-chandelier');
-          if (!allowedSlugs.includes('classic-chandelier')) allowedSlugs.push('classic-chandelier');
-          if (!allowedSlugs.includes('led-chandelier')) allowedSlugs.push('led-chandelier');
+          [
+            'antique-chandelier',
+            'antic-chandelier',
+            'classic-chandelier',
+            'led-chandelier',
+            'glass-chandelier',
+            'crystal-chandelier',
+            'italian-chandelier',
+            'modern-chandelier',
+            'profile-chandelier',
+            'e14-chandelier',
+            'fan-chandelier',
+            'ceiling-chandelier',
+          ].forEach((cs) => {
+            if (!allowedSlugs.includes(cs)) allowedSlugs.push(cs);
+          });
         }
         const matchingCategories = await Category.find({
           slug: { $in: allowedSlugs },
@@ -872,14 +923,17 @@ export const getCatalog = async (req, res, next) => {
     // 12. Format Products cleanly for client consumption
     const products = rawProducts.map((p) => {
       const coverImg =
+        p.mainImage ||
         p.images?.find((img) => img.isCover)?.url ||
         p.images?.[0]?.url ||
-        '/categories/chandelier.jpg';
+        p.category?.image ||
+        '/showroom-hero-hd.jpg';
 
       const hoverImg =
         p.images?.[1]?.url ||
         p.images?.[0]?.url ||
-        '/categories/pendant-lamp.jpg';
+        p.mainImage ||
+        coverImg;
 
       return {
         _id: p._id,

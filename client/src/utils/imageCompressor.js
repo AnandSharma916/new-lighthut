@@ -30,10 +30,14 @@ export const isPlaceholderPhoto = (url = '') => {
     return false;
   }
 
+  // Never treat genuine product gallery photos as placeholders
+  if (clean.includes('/products/') || clean.includes('/uploads/')) {
+    return false;
+  }
+
   const lower = clean.toLowerCase();
   return (
     lower.includes('/categories/') ||
-    lower.includes('chandelier') ||
     lower.includes('placeholder') ||
     lower.includes('hero-chandelier') ||
     lower.includes('philosophy-grand-chandelier') ||
