@@ -245,7 +245,7 @@ const initDB = async () => {
       // 3. Migrate Products assigned to standalone Antique Chandelier or with legacy 'antic' slugs
       if (chandelierParent) {
         const antiqueCatIds = (await Category.find({ slug: { $in: ['antique-chandelier', 'antic-chandelier'] } }).select('_id')).map(c => c._id);
-        
+
         // Reassign products saved under standalone antique category to parent Chandelier with subcategory
         const remappedStandalone = await Product.updateMany(
           { category: { $in: antiqueCatIds } },

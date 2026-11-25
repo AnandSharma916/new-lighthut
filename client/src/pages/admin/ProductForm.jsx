@@ -105,7 +105,7 @@ export const ProductForm = () => {
         const res = await productService.getProductById(id);
         if (res.success && res.product) {
           const p = res.product;
-          
+
           // Collect all product images into structured gallery items with deduplication
           const seenUrls = new Set();
           const productImages = [];
@@ -530,7 +530,7 @@ export const ProductForm = () => {
       {/* Main Single-Card Form */}
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="bg-[#14171d] border border-white/10 rounded-2xl p-6 sm:p-8 shadow-xl space-y-6">
-          
+
           {/* 1. Heading Name / Product Name (Optional) */}
           <div className="space-y-2">
             <label className="text-xs font-semibold uppercase tracking-wider text-neutral-300 flex items-center gap-1.5">
@@ -861,7 +861,7 @@ export const ProductForm = () => {
 
             {/* ── 3 Clear Ways to Add Photos ── */}
             <div className="space-y-3.5">
-              
+
               {/* WAY 1: Direct Browser File Selection & Upload */}
               <div className="p-3.5 rounded-xl bg-black/40 border border-white/10 space-y-2">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
@@ -1036,11 +1036,10 @@ export const ProductForm = () => {
                   {formData.images.map((img, idx) => (
                     <div
                       key={img.url + idx}
-                      className={`relative group rounded-xl overflow-hidden border bg-neutral-900 aspect-square flex flex-col justify-between transition-all ${
-                        img.isCover
+                      className={`relative group rounded-xl overflow-hidden border bg-neutral-900 aspect-square flex flex-col justify-between transition-all ${img.isCover
                           ? 'border-amber-400 ring-2 ring-amber-400/30 shadow-lg'
                           : 'border-white/10 hover:border-white/30'
-                      }`}
+                        }`}
                     >
                       <img
                         src={img.url}
