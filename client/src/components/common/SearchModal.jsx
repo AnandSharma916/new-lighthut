@@ -60,7 +60,7 @@ export const SearchModal = ({ isOpen, onClose }) => {
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4">
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-20 px-3 sm:px-4">
           {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -170,7 +170,7 @@ export const SearchModal = ({ isOpen, onClose }) => {
                 <div className="py-8 px-4 text-center">
                   <p className="text-xs uppercase tracking-luxury text-neutral-500 font-semibold mb-3">Popular Searches</p>
                   <div className="flex flex-wrap justify-center gap-2">
-                    {['Wall Lamp', 'Classic Chandelier', 'Pendant Lamp', 'Double Height', 'Outdoor Light', 'Dining Table Lamp', 'Table Lamp', 'Floor Lamp', 'Filament Bulb', 'Spare Driver'].map((tag) => (
+                    {['Wall Lamp', 'LED Chandelier', 'Classic Chandelier', 'Antique Chandelier', 'Pendant Lamp', 'Double Height', 'Outdoor Light', 'Dining Table Lamp', 'Table Lamp', 'Floor Lamp', 'Filament Bulb'].map((tag) => (
                       <button
                         key={tag}
                         onClick={() => setSearchTerm(tag)}

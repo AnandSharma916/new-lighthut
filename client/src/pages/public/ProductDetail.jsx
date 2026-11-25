@@ -619,20 +619,20 @@ export const ProductDetail = () => {
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 w-full">
-          <nav className="flex items-center gap-2 text-xs text-neutral-300 mb-3" aria-label="Breadcrumb">
-            <Link to="/" className="hover:text-white transition-colors">Home</Link>
-            <ChevronRight className="w-3.5 h-3.5 text-neutral-400" />
-            <Link to="/catalog" className="hover:text-white transition-colors">Catalog</Link>
+          <nav className="flex items-center gap-2 text-xs text-neutral-300 mb-3 overflow-x-auto scrollbar-none whitespace-nowrap py-1" aria-label="Breadcrumb">
+            <Link to="/" className="hover:text-white transition-colors shrink-0">Home</Link>
+            <ChevronRight className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
+            <Link to="/catalog" className="hover:text-white transition-colors shrink-0">Catalog</Link>
             {product.category && (
               <>
-                <ChevronRight className="w-3.5 h-3.5 text-neutral-400" />
-                <Link to={`/catalog?category=${product.category.slug || product.category}`} className="hover:text-white transition-colors">
+                <ChevronRight className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
+                <Link to={`/catalog?category=${product.category.slug || product.category}`} className="hover:text-white transition-colors shrink-0">
                   {product.category.name || product.categoryName}
                 </Link>
               </>
             )}
-            <ChevronRight className="w-3.5 h-3.5 text-neutral-400" />
-            <span className="text-red-400 font-semibold truncate">{product.name}</span>
+            <ChevronRight className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
+            <span className="text-red-400 font-semibold truncate max-w-[200px] sm:max-w-none">{product.name}</span>
           </nav>
 
           <span className="text-[11px] uppercase tracking-luxury text-[#DC2626] font-bold block mb-1">
@@ -928,9 +928,9 @@ export const ProductDetail = () => {
               </h3>
               <div className="rounded-xl bg-[#f8fafc] border border-neutral-200 overflow-hidden divide-y divide-neutral-200">
                 {specsList.map((spec, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-3.5 text-xs hover:bg-white transition-colors">
-                    <span className="text-neutral-500 font-medium">{spec.label}</span>
-                    <span className="text-neutral-900 font-semibold text-right ml-4">{spec.value}</span>
+                  <div key={idx} className="flex items-start sm:items-center justify-between p-3 sm:p-3.5 text-xs hover:bg-white transition-colors gap-3">
+                    <span className="text-neutral-500 font-medium shrink-0">{spec.label}</span>
+                    <span className="text-neutral-900 font-semibold text-right break-words min-w-0">{spec.value}</span>
                   </div>
                 ))}
               </div>
@@ -1225,7 +1225,7 @@ export const ProductDetail = () => {
         )}
       </AnimatePresence>
 
-      {/* ── Mobile Sticky Bottom Action Bar (Instant Inquiry) ── */}
+      {/* ── Mobile Sticky Bottom Action Bar (Instant Inquiry & PDF Spec Sheet) ── */}
       <div className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-neutral-200/90 px-4 py-3 shadow-[0_-8px_25px_rgba(0,0,0,0.1)] flex items-center justify-between gap-3">
         <div className="min-w-0">
           <div className="text-[10px] text-neutral-500 font-semibold truncate tracking-wider uppercase">
@@ -1236,6 +1236,15 @@ export const ProductDetail = () => {
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={handleDownloadSpecSheetPdf}
+            className="p-2.5 rounded-xl border border-neutral-300 bg-neutral-100 hover:bg-neutral-200 text-[#DC2626] flex items-center justify-center transition-all active:scale-95 cursor-pointer shadow-xs"
+            title="Download Spec Sheet (PDF)"
+            aria-label="Download Spec Sheet PDF"
+          >
+            <Download className="w-4 h-4" />
+          </button>
           <button
             type="button"
             onClick={() => setInquiryOpen(true)}
