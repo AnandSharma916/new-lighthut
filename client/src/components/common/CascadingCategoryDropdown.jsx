@@ -79,7 +79,7 @@ export const PRODUCT_CATEGORIES_DATA = [
     count: 12,
     sub: [
       {
-        name: 'Classic Chandelier',
+        name: 'Led Chandelier',
         slug: 'classic-chandelier',
         image: '/categories/chandelier.jpg',
         desc: 'Architectural Geometric Rings & Heritage Centerpieces',
@@ -115,8 +115,8 @@ export const PRODUCT_CATEGORIES_DATA = [
         desc: 'Contemporary Sculptural Centerpieces',
       },
       {
-        name: 'Antic Chandelier',
-        slug: 'antic-chandelier',
+        name: 'Antique Chandelier',
+        slug: 'antique-chandelier',
         image: '/categories/antic-chandelier.jpg',
         desc: 'Heritage Gilded & Classic Ironwork',
       },

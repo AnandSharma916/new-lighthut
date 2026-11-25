@@ -19,13 +19,13 @@ export const MASTER_CATEGORIES = [
     productsCount: 9,
     total: 9,
     subcategories: [
-      { name: 'Classic Chandelier', slug: 'classic-chandelier', count: 2, image: '/categories/chandelier.jpg' },
+      { name: 'Led Chandelier', slug: 'classic-chandelier', count: 2, image: '/categories/chandelier.jpg' },
       { name: 'E14 Chandelier', slug: 'e14-chandelier', count: 2, image: '/categories/e14-chandelier.jpg' },
       { name: 'Profile Chandelier', slug: 'profile-chandelier', count: 2, image: '/categories/profile-chandelier.jpg' },
       { name: 'Glass Chandelier', slug: 'glass-chandelier', count: 2, image: '/categories/glass-chandelier.jpg' },
       { name: 'Italian Chandelier', slug: 'italian-chandelier', count: 2, image: '/categories/italian-chandelier.jpg' },
       { name: 'Modern Chandelier', slug: 'modern-chandelier', count: 2, image: '/categories/modern-chandelier.jpg' },
-      { name: 'Antic Chandelier', slug: 'antic-chandelier', count: 2, image: '/categories/antic-chandelier.jpg' },
+      { name: 'Antique Chandelier', slug: 'antique-chandelier', count: 2, image: '/categories/antic-chandelier.jpg' },
       { name: 'Fan Chandelier', slug: 'fan-chandelier', count: 2, image: '/categories/fan-chandelier.jpg' },
       { name: 'Celling Chandelier', slug: 'ceiling-chandelier', count: 2, image: '/categories/ceiling-chandelier.jpg' },
     ],
@@ -530,14 +530,14 @@ export const MASTER_PRODUCTS = [
     },
   },
 
-  // ── CHANDELIER: Antic Chandelier ──
+  // ── CHANDELIER: Antique Chandelier ──
   {
     _id: 'prod-ch-701',
-    name: 'LH-CH701 Heritage Wrought Iron Antic Chandelier',
-    slug: 'lh-ch701-heritage-wrought-iron-antic-chandelier',
+    name: 'LH-CH701 Heritage Wrought Iron Antique Chandelier',
+    slug: 'lh-ch701-heritage-wrought-iron-antique-chandelier',
     sku: 'LH-CH701',
     category: 'chandelier',
-    subcategory: 'antic-chandelier',
+    subcategory: 'antique-chandelier',
     categoryName: 'Chandelier',
     shortDescription: 'Rustic antique black wrought iron chandelier with distressed brass candle cups.',
     description: 'Forged iron bands sculpted into an open armillary sphere, encasing a multi-tiered candelabra cluster for historical and industrial heritage estates.',
@@ -545,7 +545,7 @@ export const MASTER_PRODUCTS = [
     isFeatured: false,
     isPublished: true,
     images: [
-      { url: '/categories/antic-chandelier.jpg', alt: 'LH-CH701 Heritage Wrought Iron Antic Chandelier', isCover: true },
+      { url: '/categories/antic-chandelier.jpg', alt: 'LH-CH701 Heritage Wrought Iron Antique Chandelier', isCover: true },
     ],
     specifications: {
       dimensions: 'Diameter: 700mm, Height: 750mm',

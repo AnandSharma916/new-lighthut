@@ -221,11 +221,45 @@ export const Catalog = () => {
   const displayedProducts = useMemo(() => {
     if (!currentSub) return products;
     const target = currentSub.toLowerCase();
+    const isAntique = target.includes('antic') || target.includes('antique');
+    const isLedChandelier = target.includes('classic') || target.includes('led-chandelier') || target === 'led chandelier';
+
     const filtered = products.filter((p) => {
       const pSub = String(p.subcategory || p.subCategory || '').toLowerCase();
       const pSlug = String(p.slug || '').toLowerCase();
       const pName = String(p.name || '').toLowerCase();
-      return pSub.includes(target) || target.includes(pSub) || pSlug.includes(target) || pName.includes(target);
+      const pCat = String(typeof p.category === 'string' ? p.category : p.category?.slug || p.category?.name || '').toLowerCase();
+
+      if (isAntique) {
+        return (
+          pSub.includes('antique') ||
+          pSub.includes('antic') ||
+          pCat.includes('antique') ||
+          pCat.includes('antic') ||
+          pName.includes('antique') ||
+          pName.includes('antic') ||
+          pName.includes('4012') ||
+          pSlug.includes('antique') ||
+          pSlug.includes('antic')
+        );
+      }
+      if (isLedChandelier) {
+        return (
+          pSub.includes('classic') ||
+          pSub.includes('led-chandelier') ||
+          pCat.includes('classic') ||
+          pCat.includes('led-chandelier') ||
+          pSlug.includes('classic') ||
+          pSlug.includes('led-chandelier')
+        );
+      }
+      return (
+        pSub.includes(target) ||
+        target.includes(pSub) ||
+        pSlug.includes(target) ||
+        pName.includes(target) ||
+        pCat.includes(target)
+      );
     });
     return filtered.length > 0 ? filtered : products;
   }, [products, currentSub]);
@@ -340,6 +374,30 @@ export const Catalog = () => {
     const sl = String(p.slug || '').toLowerCase();
     const target = String(subSlug).toLowerCase();
 
+    if (target.includes('antic') || target.includes('antique')) {
+      return (
+        s.includes('antique') ||
+        s.includes('antic') ||
+        c.includes('antique') ||
+        c.includes('antic') ||
+        n.includes('antique') ||
+        n.includes('antic') ||
+        n.includes('4012') ||
+        sl.includes('antique') ||
+        sl.includes('antic')
+      );
+    }
+    if (target.includes('classic') && target.includes('chandelier')) {
+      return (
+        s.includes('classic') ||
+        s.includes('led-chandelier') ||
+        c.includes('classic') ||
+        c.includes('led-chandelier') ||
+        n.includes('classic') ||
+        sl.includes('classic') ||
+        sl.includes('led-chandelier')
+      );
+    }
     if (target.includes('gate')) {
       return s.includes('gate') || c.includes('gate') || n.includes('gate') || sl.includes('gate');
     }
@@ -1514,7 +1572,13 @@ export const Catalog = () => {
             )}
             {currentSub && (
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs bg-red-50 text-[#DC2626] border border-red-200 font-medium">
-                Type: {currentSub.replace(/-/g, ' ').toUpperCase()}
+                Type:{' '}
+                {selectedSubDef?.name?.toUpperCase() ||
+                  (currentSub.includes('antic') || currentSub.includes('antique')
+                    ? 'ANTIQUE CHANDELIER'
+                    : currentSub.includes('classic')
+                    ? 'LED CHANDELIER'
+                    : currentSub.replace(/-/g, ' ').toUpperCase())}
                 <button
                   type="button"
                   onClick={() => updateQuery({ sub: undefined })}

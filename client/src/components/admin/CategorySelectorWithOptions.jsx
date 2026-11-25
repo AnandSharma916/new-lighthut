@@ -1,5 +1,6 @@
 import React from 'react';
 import { Layers, Package } from 'lucide-react';
+import { STANDALONE_PARENT_MAP, MASTER_CATEGORY_SLUGS } from '../../utils/categoryMapping';
 
 export const CategorySelectorWithOptions = ({
   categories = [],
@@ -10,9 +11,37 @@ export const CategorySelectorWithOptions = ({
   onCategoriesChanged,
   disabled = false,
 }) => {
-  const selectedCategoryObj = categories.find((c) => c._id === selectedCategoryId) || null;
+  // 1. Locate selected category object directly
+  let effectiveCategoryObj = categories.find((c) => String(c._id) === String(selectedCategoryId)) || null;
+  let effectiveSubSlug = selectedSubcategory || '';
+
+  // 2. If it is a standalone subcategory category, map to its parent category
+  if (effectiveCategoryObj && STANDALONE_PARENT_MAP[effectiveCategoryObj.slug]) {
+    const mapping = STANDALONE_PARENT_MAP[effectiveCategoryObj.slug];
+    const parentObj = categories.find((c) => c.slug === mapping.parentSlug);
+    if (parentObj) {
+      effectiveCategoryObj = parentObj;
+      if (!effectiveSubSlug) {
+        effectiveSubSlug = mapping.subcategory;
+      }
+    }
+  }
+
+  // 3. Normalize subcategory slug if it contains 'antic'
+  if (effectiveSubSlug.includes('antic') || effectiveSubSlug.includes('antique')) {
+    effectiveSubSlug = 'antique-chandelier';
+  } else if (effectiveSubSlug === 'led-chandelier') {
+    effectiveSubSlug = 'classic-chandelier';
+  }
+
+  // 4. Available subcategories for the resolved category
   const availableSubcategories =
-    selectedCategoryObj?.subcategories?.filter((s) => s.isActive !== false) || [];
+    effectiveCategoryObj?.subcategories?.filter((s) => s.isActive !== false) || [];
+
+  // 5. Separate master categories for clean display
+  const masterSlugsSet = new Set(MASTER_CATEGORY_SLUGS);
+  const masterCategories = categories.filter((c) => masterSlugsSet.has(c.slug));
+  const otherCategories = categories.filter((c) => !masterSlugsSet.has(c.slug));
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -29,24 +58,40 @@ export const CategorySelectorWithOptions = ({
 
         {/* The Native Styled Category Dropdown */}
         <select
-          value={selectedCategoryId}
-          onChange={(e) => onSelectCategory(e.target.value)}
+          value={effectiveCategoryObj?._id || ''}
+          onChange={(e) => {
+            const newCatId = e.target.value;
+            onSelectCategory(newCatId);
+          }}
           disabled={disabled}
           className="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 text-white focus:border-[#DC2626] focus:outline-none transition-all text-sm font-medium cursor-pointer"
         >
           <option value="" className="bg-[#14171d] text-neutral-400">
             -- Choose a category (Optional) --
           </option>
-          {categories.map((cat) => (
-            <option key={cat._id} value={cat._id} className="bg-[#14171d] text-white">
-              {cat.icon || '💡'} {cat.name}
-            </option>
-          ))}
+          {masterCategories.length > 0 && (
+            <optgroup label="Primary Architectural Categories" className="bg-[#14171d] text-neutral-300 font-semibold">
+              {masterCategories.map((cat) => (
+                <option key={cat._id} value={cat._id} className="bg-[#14171d] text-white">
+                  {cat.icon || '💡'} {cat.name} ({cat.subcategories?.length || 0} sub-types)
+                </option>
+              ))}
+            </optgroup>
+          )}
+          {otherCategories.length > 0 && (
+            <optgroup label="Other / Standalone Categories" className="bg-[#14171d] text-neutral-400 font-normal">
+              {otherCategories.map((cat) => (
+                <option key={cat._id} value={cat._id} className="bg-[#14171d] text-neutral-300">
+                  {cat.icon || '💡'} {cat.name}
+                </option>
+              ))}
+            </optgroup>
+          )}
         </select>
 
-        {selectedCategoryObj && (
+        {effectiveCategoryObj && (
           <p className="text-[11px] text-neutral-400">
-            Selected: <strong className="text-white">{selectedCategoryObj.name}</strong> (slug: /{selectedCategoryObj.slug || '-'})
+            Selected: <strong className="text-white">{effectiveCategoryObj.name}</strong> (slug: /{effectiveCategoryObj.slug || '-'})
           </p>
         )}
       </div>
@@ -63,18 +108,21 @@ export const CategorySelectorWithOptions = ({
 
         {/* Subcategory Dropdown */}
         <select
-          value={selectedSubcategory}
+          value={effectiveSubSlug}
           onChange={(e) => {
             const subSlug = e.target.value;
             const matched = availableSubcategories.find((s) => s.slug === subSlug);
-            onSelectSubcategory(subSlug, matched ? matched.name : (subSlug ? subSlug.replace(/-/g, ' ').toUpperCase() : ''));
+            onSelectSubcategory(
+              subSlug,
+              matched ? matched.name : (subSlug ? subSlug.replace(/-/g, ' ').toUpperCase() : '')
+            );
           }}
-          disabled={disabled || !selectedCategoryObj}
+          disabled={disabled || !effectiveCategoryObj}
           className="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 text-white focus:border-[#DC2626] focus:outline-none transition-all text-sm font-medium cursor-pointer"
         >
           <option value="" className="bg-[#14171d] text-neutral-400">
-            {selectedCategoryObj
-              ? `-- Direct in ${selectedCategoryObj.name} (General / No Subcategory) --`
+            {effectiveCategoryObj
+              ? `-- Direct in ${effectiveCategoryObj.name} (General / No Subcategory) --`
               : '-- Select a Category First --'}
           </option>
           {availableSubcategories.map((sub) => (
@@ -84,10 +132,10 @@ export const CategorySelectorWithOptions = ({
           ))}
         </select>
 
-        {selectedCategoryObj && (
+        {effectiveCategoryObj && (
           <p className="text-[11px] text-neutral-400">
             {availableSubcategories.length > 0
-              ? `${availableSubcategories.length} sub-item${availableSubcategories.length > 1 ? 's' : ''} available in ${selectedCategoryObj.name}.`
+              ? `${availableSubcategories.length} sub-item${availableSubcategories.length > 1 ? 's' : ''} available in ${effectiveCategoryObj.name}.`
               : 'No subcategories assigned to this category.'}
           </p>
         )}

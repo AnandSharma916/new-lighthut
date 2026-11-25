@@ -16,10 +16,14 @@ const CATEGORY_FAMILY_MAP = {
     'italian-chandelier',
     'modern-chandelier',
     'antique-chandelier',
+    'antic-chandelier',
     'fan-chandelier',
     'ceiling-chandelier',
   ],
   'classic-chandelier': ['classic-chandelier', 'led-chandelier', 'chandelier'],
+  'led-chandelier': ['classic-chandelier', 'led-chandelier', 'chandelier'],
+  'antique-chandelier': ['antique-chandelier', 'antic-chandelier', 'chandelier'],
+  'antic-chandelier': ['antique-chandelier', 'antic-chandelier', 'chandelier'],
   'double-height': ['double-height', 'crystal-chandelier', 'modern-double-height-chandelier'],
   'outdoor-light': ['outdoor-light', 'gate-lamp', 'outdoor-wall-lamp', 'outdoor-hanging-lamp', 'outdoor'],
   'outdoor-hanging-lamp': ['outdoor-hanging-lamp', 'outdoor-hanging', 'hanging-lamp'],
@@ -28,6 +32,32 @@ const CATEGORY_FAMILY_MAP = {
   'table-lamp': ['table-lamp', 'table'],
   'floor-lamp': ['floor-lamp', 'floor'],
   'led-filament-bulb': ['led-filament-bulb', 'filament'],
+};
+
+export const STANDALONE_SUBCAT_MAP = {
+  'antique-chandelier': { parentSlug: 'chandelier', subcategory: 'antique-chandelier', subcategoryName: 'Antique Chandelier' },
+  'antic-chandelier': { parentSlug: 'chandelier', subcategory: 'antique-chandelier', subcategoryName: 'Antique Chandelier' },
+  'classic-chandelier': { parentSlug: 'chandelier', subcategory: 'classic-chandelier', subcategoryName: 'Led Chandelier' },
+  'led-chandelier': { parentSlug: 'chandelier', subcategory: 'classic-chandelier', subcategoryName: 'Led Chandelier' },
+  'e14-chandelier': { parentSlug: 'chandelier', subcategory: 'e14-chandelier', subcategoryName: 'E14 Chandelier' },
+  'profile-chandelier': { parentSlug: 'chandelier', subcategory: 'profile-chandelier', subcategoryName: 'Profile Chandelier' },
+  'glass-chandelier': { parentSlug: 'chandelier', subcategory: 'glass-chandelier', subcategoryName: 'Glass Chandelier' },
+  'italian-chandelier': { parentSlug: 'chandelier', subcategory: 'italian-chandelier', subcategoryName: 'Italian Chandelier' },
+  'modern-chandelier': { parentSlug: 'chandelier', subcategory: 'modern-chandelier', subcategoryName: 'Modern Chandelier' },
+  'fan-chandelier': { parentSlug: 'chandelier', subcategory: 'fan-chandelier', subcategoryName: 'Fan Chandelier' },
+  'ceiling-chandelier': { parentSlug: 'chandelier', subcategory: 'ceiling-chandelier', subcategoryName: 'Ceiling Chandelier' },
+  'crystal-chandelier': { parentSlug: 'double-height', subcategory: 'crystal-chandelier', subcategoryName: 'Crystal Chandelier' },
+  'modern-double-height-chandelier': { parentSlug: 'double-height', subcategory: 'modern-chandelier-dh', subcategoryName: 'Modern Chandelier' },
+  'gate-lamp': { parentSlug: 'outdoor-light', subcategory: 'gate-lamp', subcategoryName: 'Gate Lamp' },
+  'outdoor-wall-lamp': { parentSlug: 'outdoor-light', subcategory: 'outdoor-wall-lamp', subcategoryName: 'Wall Lamp' },
+  'outdoor-hanging-lamp': { parentSlug: 'outdoor-light', subcategory: 'outdoor-hanging-lamp', subcategoryName: 'Hanging Lamp' },
+  'led-hanging-lamp': { parentSlug: 'pendant-lamp', subcategory: 'led-hanging-lamp', subcategoryName: 'Led Hanging Lamp' },
+  'classic-hanging-lamp': { parentSlug: 'pendant-lamp', subcategory: 'classic-hanging-lamp', subcategoryName: 'Hanging Lamp' },
+  'led-profile-pendant': { parentSlug: 'pendant-lamp', subcategory: 'led-profile-pendant', subcategoryName: 'LED Profile Pendant' },
+  'led-wall-lamp': { parentSlug: 'wall-lamp', subcategory: 'led-wall-lamp', subcategoryName: 'Led Wall Lamp' },
+  'classic-wall-lamp': { parentSlug: 'wall-lamp', subcategory: 'classic-wall-lamp', subcategoryName: 'Wall Lamp' },
+  'hanging-base': { parentSlug: 'spare-part', subcategory: 'hanging-base', subcategoryName: 'Hanging Base' },
+  'spare-driver': { parentSlug: 'spare-part', subcategory: 'spare-driver', subcategoryName: 'Spare Driver' },
 };
 
 // @desc    Get all products with filtering, search, sorting, and pagination
@@ -454,40 +484,36 @@ export const createProduct = async (req, res, next) => {
     const productName = (name || title || '').trim() || 'New Luminaire';
     let productSku = (sku || '').trim().toUpperCase();
 
-    let targetCategory = category;
-    if (!targetCategory) {
-      // Pick first existing category as default if omitted
-      const firstCat = await Category.findOne();
-      if (firstCat) {
-        targetCategory = firstCat._id;
-      }
-    }
-
-    // Verify category exists or fallback to first available (accepts ObjectId, slug, or name)
+    let targetCategory = category || null;
     let categoryExists = null;
-    if (typeof targetCategory === 'string' && targetCategory.match(/^[0-9a-fA-F]{24}$/)) {
-      categoryExists = await Category.findById(targetCategory);
-    }
-    if (!categoryExists) {
-      categoryExists = await Category.findOne({
-        $or: [
-          { slug: targetCategory },
-          { name: new RegExp(`^${targetCategory}$`, 'i') },
-        ],
-      });
-    }
-    if (categoryExists) {
-      targetCategory = categoryExists._id;
-    } else {
-      const fallbackCat = await Category.findOne();
-      if (fallbackCat) {
-        targetCategory = fallbackCat._id;
-        categoryExists = fallbackCat;
-      } else {
-        return res.status(400).json({
-          success: false,
-          message: 'No category found in database.',
+
+    if (targetCategory) {
+      if (typeof targetCategory === 'string' && targetCategory.match(/^[0-9a-fA-F]{24}$/)) {
+        categoryExists = await Category.findById(targetCategory);
+      }
+      if (!categoryExists) {
+        categoryExists = await Category.findOne({
+          $or: [
+            { slug: targetCategory },
+            { name: new RegExp(`^${targetCategory}$`, 'i') },
+          ],
         });
+      }
+      if (categoryExists) {
+        if (STANDALONE_SUBCAT_MAP[categoryExists.slug]) {
+          const mapping = STANDALONE_SUBCAT_MAP[categoryExists.slug];
+          const parentCat = await Category.findOne({ slug: mapping.parentSlug });
+          if (parentCat) {
+            categoryExists = parentCat;
+            if (!subcategory && !sub) {
+              finalSubcategory = mapping.subcategory;
+              finalSubcategoryName = mapping.subcategoryName;
+            }
+          }
+        }
+        targetCategory = categoryExists._id;
+      } else {
+        targetCategory = null;
       }
     }
 
@@ -512,6 +538,14 @@ export const createProduct = async (req, res, next) => {
         .split('-')
         .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
         .join(' ');
+    }
+
+    if (finalSubcategory && (finalSubcategory.includes('antic') || finalSubcategory.includes('antique'))) {
+      finalSubcategory = 'antique-chandelier';
+      finalSubcategoryName = 'Antique Chandelier';
+    } else if (finalSubcategory === 'classic-chandelier' || finalSubcategory === 'led-chandelier') {
+      finalSubcategory = 'classic-chandelier';
+      finalSubcategoryName = 'Led Chandelier';
     }
 
     // Check SKU uniqueness only if SKU is provided
@@ -667,6 +701,17 @@ export const updateProduct = async (req, res, next) => {
           message: 'Selected category does not exist.',
         });
       }
+      if (categoryExists && STANDALONE_SUBCAT_MAP[categoryExists.slug]) {
+        const mapping = STANDALONE_SUBCAT_MAP[categoryExists.slug];
+        const parentCat = await Category.findOne({ slug: mapping.parentSlug });
+        if (parentCat) {
+          categoryExists = parentCat;
+          if (!subcategory && !sub) {
+            product.subcategory = mapping.subcategory;
+            product.subcategoryName = mapping.subcategoryName;
+          }
+        }
+      }
       product.category = categoryExists._id;
     }
 
@@ -692,6 +737,14 @@ export const updateProduct = async (req, res, next) => {
           .split('-')
           .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
           .join(' ');
+      }
+
+      if (updatedSub && (updatedSub.includes('antic') || updatedSub.includes('antique'))) {
+        updatedSub = 'antique-chandelier';
+        updatedSubName = 'Antique Chandelier';
+      } else if (updatedSub === 'classic-chandelier' || updatedSub === 'led-chandelier') {
+        updatedSub = 'classic-chandelier';
+        updatedSubName = 'Led Chandelier';
       }
 
       product.subcategory = updatedSub;

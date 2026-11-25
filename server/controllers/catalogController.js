@@ -86,7 +86,7 @@ export const CATALOG_CATEGORY_GROUPS = [
     image: '/categories/chandelier.jpg',
     subcategories: [
       {
-        name: 'Classic Chandelier',
+        name: 'Led Chandelier',
         slug: 'classic-chandelier',
         image: '/categories/chandelier.jpg',
         desc: 'Architectural Geometric Rings & Heritage Centerpieces',
@@ -122,8 +122,8 @@ export const CATALOG_CATEGORY_GROUPS = [
         desc: 'Contemporary Sculptural Centerpieces',
       },
       {
-        name: 'Antic Chandelier',
-        slug: 'antic-chandelier',
+        name: 'Antique Chandelier',
+        slug: 'antique-chandelier',
         image: '/categories/antic-chandelier.jpg',
         desc: 'Heritage Gilded & Classic Ironwork',
       },
@@ -320,6 +320,13 @@ export const CATALOG_CATEGORY_GROUPS = [
 function resolveCategorySlugs(categoryQuery) {
   if (!categoryQuery || categoryQuery === 'all') return null;
 
+  if (categoryQuery === 'antique-chandelier' || categoryQuery === 'antic-chandelier') {
+    return ['antique-chandelier', 'antic-chandelier', 'chandelier'];
+  }
+  if (categoryQuery === 'classic-chandelier' || categoryQuery === 'led-chandelier') {
+    return ['classic-chandelier', 'led-chandelier', 'chandelier'];
+  }
+
   // Check if query matches any parent group
   const parentGroup = CATALOG_CATEGORY_GROUPS.find((g) => g.slug === categoryQuery);
   if (parentGroup) {
@@ -327,7 +334,10 @@ function resolveCategorySlugs(categoryQuery) {
     if (parentGroup.subcategories) {
       parentGroup.subcategories.forEach((sub) => slugs.push(sub.slug));
     }
-    return slugs;
+    if (categoryQuery === 'chandelier') {
+      slugs.push('antique-chandelier', 'antic-chandelier', 'classic-chandelier', 'led-chandelier');
+    }
+    return [...new Set(slugs)];
   }
 
   // It's a specific subcategory or single slug
@@ -550,6 +560,18 @@ export const getCatalog = async (req, res, next) => {
       } else if (targetSub.includes('gate')) {
         subConditions.push({ subcategory: /gate/i });
         subConditions.push({ subcategoryName: /gate/i });
+      } else if (targetSub.includes('antic') || targetSub.includes('antique')) {
+        subConditions.push({ subcategory: /antic-chandelier|antique-chandelier/i });
+        subConditions.push({ subcategoryName: /antic|antique/i });
+        subConditions.push({ name: /4012|antic|antique/i });
+        subConditions.push({ description: /antic|antique/i });
+        const antiqueCats = await Category.find({
+          slug: { $in: ['antique-chandelier', 'antic-chandelier'] }
+        }).select('_id');
+        antiqueCats.forEach(ac => subConditions.push({ category: ac._id }));
+      } else if (targetSub.includes('classic') || targetSub.includes('led-chandelier') || targetSub === 'led chandelier') {
+        subConditions.push({ subcategory: /classic-chandelier|led-chandelier/i });
+        subConditions.push({ subcategoryName: /classic|led chandelier/i });
       }
 
       if (matchingSubCat) {
@@ -563,6 +585,12 @@ export const getCatalog = async (req, res, next) => {
     if (category && category !== 'all') {
       const allowedSlugs = resolveCategorySlugs(category);
       if (allowedSlugs && allowedSlugs.length > 0) {
+        if (allowedSlugs.includes('chandelier')) {
+          if (!allowedSlugs.includes('antique-chandelier')) allowedSlugs.push('antique-chandelier');
+          if (!allowedSlugs.includes('antic-chandelier')) allowedSlugs.push('antic-chandelier');
+          if (!allowedSlugs.includes('classic-chandelier')) allowedSlugs.push('classic-chandelier');
+          if (!allowedSlugs.includes('led-chandelier')) allowedSlugs.push('led-chandelier');
+        }
         const matchingCategories = await Category.find({
           slug: { $in: allowedSlugs },
         }).select('_id');
@@ -727,7 +755,14 @@ export const getCatalog = async (req, res, next) => {
           const subSlug = (sub.slug || '').toLowerCase();
           const subMatch = categorySlugToCountMap[subSlug] || 0;
           const subDirectCount = subcategoryCountMap[subSlug] || 0;
-          const subCount = subDirectCount + subMatch;
+          let subCount = subDirectCount + subMatch;
+          if (subSlug === 'antique-chandelier' || subSlug === 'antic-chandelier') {
+            const aliasSlug = subSlug === 'antique-chandelier' ? 'antic-chandelier' : 'antique-chandelier';
+            subCount += (categorySlugToCountMap[aliasSlug] || 0) + (subcategoryCountMap[aliasSlug] || 0);
+          } else if (subSlug === 'classic-chandelier' || subSlug === 'led-chandelier') {
+            const aliasSlug = subSlug === 'classic-chandelier' ? 'led-chandelier' : 'classic-chandelier';
+            subCount += (categorySlugToCountMap[aliasSlug] || 0) + (subcategoryCountMap[aliasSlug] || 0);
+          }
           
           groupTotal += subCount;
 

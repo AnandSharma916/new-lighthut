@@ -24,6 +24,7 @@ import { useToast } from '../../context/ToastContext';
 import { ConfirmModal } from '../../components/admin/ConfirmModal';
 import { ImageUploader } from '../../components/admin/ImageUploader';
 import { CategorySelectorWithOptions } from '../../components/admin/CategorySelectorWithOptions';
+import { resolveCanonicalCategoryAndSub } from '../../utils/categoryMapping';
 import {
   compressImageFile,
   isPlaceholderPhoto,
@@ -250,12 +251,19 @@ export const ProductList = () => {
       });
     }
 
+    const { categoryId, subcategory, subcategoryName } = resolveCanonicalCategoryAndSub(
+      categories,
+      prod.category,
+      prod.subcategory,
+      prod.subcategoryName
+    );
+
     setForm({
       name: prod.name || prod.title || '',
       sku: prod.sku && !/^LH-\d{6}-\d{3}$/i.test(prod.sku) ? prod.sku : '',
-      category: prod.category?._id || prod.category || categories[0]?._id || '',
-      subcategory: prod.subcategory || '',
-      subcategoryName: prod.subcategoryName || '',
+      category: categoryId,
+      subcategory: subcategory,
+      subcategoryName: subcategoryName,
       description: prod.description || prod.shortDescription || '',
       price: prod.price !== undefined && prod.price !== null ? prod.price : '',
       images: productImages,
@@ -545,7 +553,7 @@ export const ProductList = () => {
     try {
       setSavingProduct(true);
 
-      const chosenCatId = form.category || categories[0]?._id || '';
+      const chosenCatId = form.category || '';
 
       // Handle images: deduplicate, clean URLs, and ensure valid cover photo
       const seenUrlSet = new Set();
@@ -963,12 +971,16 @@ export const ProductList = () => {
                     categories={categories}
                     selectedCategoryId={form.category}
                     onSelectCategory={(catId) => {
-                      setForm((prev) => ({
-                        ...prev,
-                        category: catId,
-                        subcategory: '',
-                        subcategoryName: '',
-                      }));
+                      setForm((prev) => {
+                        const newCatObj = categories.find((c) => String(c._id) === String(catId));
+                        const isSubValid = newCatObj?.subcategories?.some((s) => s.slug === prev.subcategory);
+                        return {
+                          ...prev,
+                          category: catId,
+                          subcategory: isSubValid ? prev.subcategory : '',
+                          subcategoryName: isSubValid ? prev.subcategoryName : '',
+                        };
+                      });
                     }}
                     selectedSubcategory={form.subcategory}
                     onSelectSubcategory={(subSlug, subName) => {

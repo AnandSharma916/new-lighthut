@@ -22,6 +22,7 @@ import { productService, categoryService, uploadService } from '../../services/a
 import { useToast } from '../../context/ToastContext';
 import { ImageUploader } from '../../components/admin/ImageUploader';
 import { CategorySelectorWithOptions } from '../../components/admin/CategorySelectorWithOptions';
+import { resolveCanonicalCategoryAndSub } from '../../utils/categoryMapping';
 import {
   compressImageFile,
   isPlaceholderPhoto,
@@ -136,11 +137,18 @@ export const ProductForm = () => {
             productImages[0].isCover = true;
           }
 
+          const { categoryId, subcategory, subcategoryName } = resolveCanonicalCategoryAndSub(
+            categories,
+            p.category,
+            p.subcategory,
+            p.subcategoryName
+          );
+
           setFormData({
             name: p.name || p.title || '',
-            category: p.category?._id || p.category || '',
-            subcategory: p.subcategory || '',
-            subcategoryName: p.subcategoryName || '',
+            category: categoryId,
+            subcategory: subcategory,
+            subcategoryName: subcategoryName,
             size: p.specifications?.dimensions || p.dimensions || p.size || '',
             finish: p.specifications?.finish || '',
             material: p.specifications?.material || '',
@@ -389,7 +397,7 @@ export const ProductForm = () => {
     e.preventDefault();
 
     const productName = formData.name.trim() || 'New Luminaire';
-    const targetCategory = formData.category || (categories[0]?._id || '');
+    const targetCategory = formData.category || '';
 
     try {
       setSubmitting(true);
@@ -545,12 +553,16 @@ export const ProductForm = () => {
             categories={categories}
             selectedCategoryId={formData.category}
             onSelectCategory={(catId) => {
-              setFormData((prev) => ({
-                ...prev,
-                category: catId,
-                subcategory: '',
-                subcategoryName: '',
-              }));
+              setFormData((prev) => {
+                const newCatObj = categories.find((c) => String(c._id) === String(catId));
+                const isSubValid = newCatObj?.subcategories?.some((s) => s.slug === prev.subcategory);
+                return {
+                  ...prev,
+                  category: catId,
+                  subcategory: isSubValid ? prev.subcategory : '',
+                  subcategoryName: isSubValid ? prev.subcategoryName : '',
+                };
+              });
             }}
             selectedSubcategory={formData.subcategory}
             onSelectSubcategory={(subSlug, subName) => {
