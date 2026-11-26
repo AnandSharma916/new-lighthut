@@ -568,42 +568,29 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Diagnostic check to inspect MongoDB sizes & find largest documents
+// Diagnostic check to inspect image URL types
 app.get('/api/health/diagnostics', async (req, res) => {
   try {
-    const t0 = Date.now();
-    const all = await Product.find({ isPublished: true }).select('name slug sku images').lean();
-    const tFetch = Date.now() - t0;
+    const sample = await Product.find({ isPublished: true })
+      .select('name slug sku images')
+      .limit(5)
+      .lean();
 
-    let totalImageBytes = 0;
-    const topBySize = [];
-
-    for (const p of all) {
-      let docBytes = 0;
-      if (Array.isArray(p.images)) {
-        for (const img of p.images) {
-          docBytes += (img.url?.length || 0);
-        }
-      }
-      totalImageBytes += docBytes;
-      topBySize.push({
-        id: p._id,
-        name: p.name,
-        slug: p.slug,
-        imageCount: p.images?.length || 0,
-        bytes: docBytes,
-        kb: Math.round(docBytes / 1024),
-      });
-    }
-
-    topBySize.sort((a, b) => b.bytes - a.bytes);
+    const analysis = sample.map((p) => ({
+      name: p.name,
+      slug: p.slug,
+      imageCount: p.images?.length || 0,
+      images: p.images?.map((img) => ({
+        isCover: img.isCover,
+        urlPrefix: img.url ? img.url.substring(0, 30) : '',
+        urlLength: img.url?.length || 0,
+        isBase64: img.url?.startsWith('data:image'),
+      })),
+    }));
 
     res.status(200).json({
       success: true,
-      tFetchMs: tFetch,
-      productCount: all.length,
-      totalImageMb: (totalImageBytes / (1024 * 1024)).toFixed(2),
-      top10LargestProducts: topBySize.slice(0, 10),
+      analysis,
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
