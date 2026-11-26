@@ -571,6 +571,7 @@ app.get('/api/health', (req, res) => {
 // Diagnostic check to inspect image URL types
 app.get('/api/health/diagnostics', async (req, res) => {
   try {
+    await ensureDB();
     const sample = await Product.find({ isPublished: true })
       .select('name slug sku images')
       .limit(5)
