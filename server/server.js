@@ -563,6 +563,7 @@ app.use(express.static(path.join(__dirname, '../client/public')));
 app.get('/api/health', (req, res) => {
   res.status(200).json({
     success: true,
+    version: 'speed-v2',
     status: 'operational',
     service: 'LightHut Lighting Catalog API',
     timestamp: new Date().toISOString(),
