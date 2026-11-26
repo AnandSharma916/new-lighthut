@@ -593,25 +593,13 @@ app.get('/api/health/diagnostics', async (req, res) => {
     const tPopulateNoImages = Date.now() - t2;
 
     const t3 = Date.now();
-    const withImages = await Product.find({ isPublished: true })
+    const slice2Images = await Product.find({ isPublished: true })
+      .select({ images: { $slice: 2 } })
+      .populate('category', 'name slug')
       .sort({ subcategory: 1, isFeatured: -1, sortOrder: 1, createdAt: -1 })
       .limit(12)
       .lean();
-    const tFindWithImages = Date.now() - t3;
-
-    const t4 = Date.now();
-    const catAgg = await Product.aggregate([
-      { $match: { isPublished: true } },
-      { $group: { _id: '$category', count: { $sum: 1 } } },
-    ]).allowDiskUse(true);
-    const tCatAgg = Date.now() - t4;
-
-    const t5 = Date.now();
-    const subAgg = await Product.aggregate([
-      { $match: { isPublished: true, subcategory: { $exists: true, $ne: '' } } },
-      { $group: { _id: '$subcategory', count: { $sum: 1 } } },
-    ]).allowDiskUse(true);
-    const tSubAgg = Date.now() - t5;
+    const tSlice2Images = Date.now() - t3;
 
     res.status(200).json({
       success: true,
@@ -619,7 +607,7 @@ app.get('/api/health/diagnostics', async (req, res) => {
         countDocumentsMs: tCount,
         findNoImagesMs: tFindNoImages,
         populateNoImagesMs: tPopulateNoImages,
-        findWithImagesMs: tFindWithImages,
+        slice2ImagesMs: tSlice2Images,
         catAggMs: tCatAgg,
         subAggMs: tSubAgg,
         totalDiagMs: Date.now() - t0,
