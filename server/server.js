@@ -575,25 +575,39 @@ app.get('/api/health', (req, res) => {
 app.get('/api/health/diagnostics', async (req, res) => {
   try {
     await ensureDB();
-    const sample = await Product.find({ isPublished: true })
-      .select('name slug sku images')
-      .limit(5)
+    const t0 = Date.now();
+    const top12 = await Product.find({ isPublished: true })
+      .select('name slug images')
+      .sort({ subcategory: 1, isFeatured: -1, sortOrder: 1, createdAt: -1 })
+      .limit(12)
       .lean();
+    const tTop12 = Date.now() - t0;
 
-    const analysis = sample.map((p) => ({
-      name: p.name,
-      slug: p.slug,
-      imageCount: p.images?.length || 0,
-      images: p.images?.map((img) => ({
-        isCover: img.isCover,
-        urlPrefix: img.url ? img.url.substring(0, 30) : '',
-        urlLength: img.url?.length || 0,
-        isBase64: img.url?.startsWith('data:image'),
-      })),
-    }));
+    const analysis = top12.map((p) => {
+      let totalBytes = 0;
+      const imgs = (p.images || []).map((img) => {
+        const len = img.url?.length || 0;
+        totalBytes += len;
+        return {
+          isCover: img.isCover,
+          urlPrefix: img.url ? img.url.substring(0, 30) : '',
+          urlLength: len,
+          isBase64: img.url?.startsWith('data:image'),
+        };
+      });
+      return {
+        name: p.name,
+        slug: p.slug,
+        imageCount: imgs.length,
+        totalDocImageBytes: totalBytes,
+        totalDocImageKb: Math.round(totalBytes / 1024),
+        images: imgs,
+      };
+    });
 
     res.status(200).json({
       success: true,
+      tTop12Ms: tTop12,
       analysis,
     });
   } catch (err) {
