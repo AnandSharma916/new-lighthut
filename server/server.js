@@ -568,51 +568,42 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Diagnostic check to inspect MongoDB indexes & execution plan
+// Diagnostic check to inspect MongoDB sizes & find largest documents
 app.get('/api/health/diagnostics', async (req, res) => {
   try {
     const t0 = Date.now();
-    const count = await Product.countDocuments({ isPublished: true });
-    const tCount = Date.now() - t0;
+    const all = await Product.find({ isPublished: true }).select('name slug sku images').lean();
+    const tFetch = Date.now() - t0;
 
-    const t1 = Date.now();
-    const noImages = await Product.find({ isPublished: true })
-      .select('-images')
-      .sort({ subcategory: 1, isFeatured: -1, sortOrder: 1, createdAt: -1 })
-      .limit(12)
-      .lean();
-    const tFindNoImages = Date.now() - t1;
+    let totalImageBytes = 0;
+    const topBySize = [];
 
-    const t2 = Date.now();
-    const populatedNoImages = await Product.find({ isPublished: true })
-      .select('-images')
-      .populate('category', 'name slug')
-      .sort({ subcategory: 1, isFeatured: -1, sortOrder: 1, createdAt: -1 })
-      .limit(12)
-      .lean();
-    const tPopulateNoImages = Date.now() - t2;
+    for (const p of all) {
+      let docBytes = 0;
+      if (Array.isArray(p.images)) {
+        for (const img of p.images) {
+          docBytes += (img.url?.length || 0);
+        }
+      }
+      totalImageBytes += docBytes;
+      topBySize.push({
+        id: p._id,
+        name: p.name,
+        slug: p.slug,
+        imageCount: p.images?.length || 0,
+        bytes: docBytes,
+        kb: Math.round(docBytes / 1024),
+      });
+    }
 
-    const t3 = Date.now();
-    const slice2Images = await Product.find({ isPublished: true })
-      .select({ images: { $slice: 2 } })
-      .populate('category', 'name slug')
-      .sort({ subcategory: 1, isFeatured: -1, sortOrder: 1, createdAt: -1 })
-      .limit(12)
-      .lean();
-    const tSlice2Images = Date.now() - t3;
+    topBySize.sort((a, b) => b.bytes - a.bytes);
 
     res.status(200).json({
       success: true,
-      timings: {
-        countDocumentsMs: tCount,
-        findNoImagesMs: tFindNoImages,
-        populateNoImagesMs: tPopulateNoImages,
-        slice2ImagesMs: tSlice2Images,
-        catAggMs: tCatAgg,
-        subAggMs: tSubAgg,
-        totalDiagMs: Date.now() - t0,
-      },
-      count,
+      tFetchMs: tFetch,
+      productCount: all.length,
+      totalImageMb: (totalImageBytes / (1024 * 1024)).toFixed(2),
+      top10LargestProducts: topBySize.slice(0, 10),
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
