@@ -580,12 +580,25 @@ app.get('/api/health/diagnostics', async (req, res) => {
       .lean();
     const tStep2 = Date.now() - t1;
 
+    const docBreakdown = rawProducts.map((p) => {
+      const fieldSizes = {};
+      for (const [k, v] of Object.entries(p)) {
+        fieldSizes[k] = JSON.stringify(v)?.length || 0;
+      }
+      return {
+        _id: p._id,
+        name: p.name,
+        slug: p.slug,
+        fieldSizes,
+      };
+    });
+
     res.status(200).json({
       success: true,
       tStep1IdsMs: tStep1,
       tStep2DocsMs: tStep2,
       totalTwoStageMs: Date.now() - t0,
-      count: rawProducts.length,
+      docBreakdown,
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
