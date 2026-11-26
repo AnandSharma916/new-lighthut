@@ -1,6 +1,7 @@
 import Product from '../models/Product.js';
 import Category from '../models/Category.js';
 import { slugify } from '../utils/slugify.js';
+import { clearCatalogCache } from '../utils/catalogCache.js';
 
 const CATEGORY_FAMILY_MAP = {
   'pendant-lamp': ['pendant-lamp', 'led-hanging-lamp', 'classic-hanging-lamp', 'led-profile-pendant', 'profile-pendant', 'pendant'],
@@ -335,13 +336,40 @@ export const getProducts = async (req, res, next) => {
     const pageSize = Math.max(1, parseInt(limit, 10));
     const skip = (pageNumber - 1) * pageSize;
 
-    const total = await Product.countDocuments(query);
-    const products = await Product.find(query)
-      .allowDiskUse(true)
-      .populate('category', 'name slug')
-      .sort(sortOption)
-      .skip(skip)
-      .limit(pageSize);
+    const [total, rawProducts] = await Promise.all([
+      Product.countDocuments(query),
+      Product.find(query)
+        .allowDiskUse(true)
+        .populate('category', 'name slug')
+        .sort(sortOption)
+        .skip(skip)
+        .limit(pageSize)
+        .lean(),
+    ]);
+
+    const products = admin === 'true'
+      ? rawProducts
+      : rawProducts.map((p) => {
+          const coverImg =
+            p.mainImage ||
+            p.images?.find((img) => img.isCover)?.url ||
+            p.images?.[0]?.url ||
+            '/showroom-hero-hd.jpg';
+          const hoverImg =
+            p.images?.[1]?.url ||
+            p.images?.[0]?.url ||
+            coverImg;
+
+          return {
+            ...p,
+            images: [
+              { url: coverImg, isCover: true, alt: p.name },
+              ...(hoverImg && hoverImg !== coverImg ? [{ url: hoverImg, isCover: false, alt: `${p.name} Alternate` }] : [])
+            ],
+            primaryImage: coverImg,
+            secondaryImage: hoverImg,
+          };
+        });
 
     res.status(200).json({
       success: true,
@@ -372,16 +400,40 @@ export const getProductBySlug = async (req, res, next) => {
 
     // Find related products in the same category (safely guarded)
     const categoryId = product.category?._id || product.category;
-    const relatedProducts = categoryId
-      ? await Product.find({
-          category: categoryId,
-          _id: { $ne: product._id },
-          isPublished: true,
-        })
-          .populate('category', 'name slug')
-          .limit(12)
-          .sort({ sortOrder: 1, createdAt: -1 })
-      : [];
+    let relatedProducts = [];
+    if (categoryId) {
+      const rawRelated = await Product.find({
+        category: categoryId,
+        _id: { $ne: product._id },
+        isPublished: true,
+      })
+        .populate('category', 'name slug')
+        .limit(12)
+        .sort({ sortOrder: 1, createdAt: -1 })
+        .lean();
+
+      relatedProducts = rawRelated.map((p) => {
+        const coverImg =
+          p.mainImage ||
+          p.images?.find((img) => img.isCover)?.url ||
+          p.images?.[0]?.url ||
+          '/showroom-hero-hd.jpg';
+        const hoverImg =
+          p.images?.[1]?.url ||
+          p.images?.[0]?.url ||
+          coverImg;
+
+        return {
+          ...p,
+          images: [
+            { url: coverImg, isCover: true, alt: p.name },
+            ...(hoverImg && hoverImg !== coverImg ? [{ url: hoverImg, isCover: false, alt: `${p.name} Alternate` }] : [])
+          ],
+          primaryImage: coverImg,
+          secondaryImage: hoverImg,
+        };
+      });
+    }
 
     res.status(200).json({
       success: true,
@@ -711,6 +763,8 @@ export const createProduct = async (req, res, next) => {
 
     const populatedProduct = await Product.findById(product._id).populate('category', 'name slug');
 
+    clearCatalogCache();
+
     res.status(201).json({
       success: true,
       product: populatedProduct,
@@ -899,6 +953,8 @@ export const updateProduct = async (req, res, next) => {
 
     await product.save();
 
+    clearCatalogCache();
+
     const updatedProduct = await Product.findById(product._id).populate('category', 'name slug');
 
     res.status(200).json({
@@ -925,6 +981,8 @@ export const deleteProduct = async (req, res, next) => {
     }
 
     await product.deleteOne();
+
+    clearCatalogCache();
 
     res.status(200).json({
       success: true,
@@ -978,6 +1036,8 @@ export const duplicateProduct = async (req, res, next) => {
     });
 
     const populated = await Product.findById(clonedProduct._id).populate('category', 'name slug');
+
+    clearCatalogCache();
 
     res.status(201).json({
       success: true,

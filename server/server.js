@@ -2,6 +2,7 @@
 // process.env at load time (e.g. config/cloudinary.js) need .env loaded before them.
 import 'dotenv/config';
 import express from 'express';
+import compression from 'compression';
 import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
@@ -31,9 +32,8 @@ import { removeE27Text } from './scripts/removeE27Text.js';
 import { normalizeLegacySlug } from './utils/legacySlug.js';
 import { CATALOG_CATEGORY_GROUPS } from './controllers/catalogController.js';
 
-// Connect to MongoDB and Auto-seed if empty
+// Background database auto-sync and migrations (executed asynchronously)
 const initDB = async () => {
-  await connectDB();
   try {
     const catCount = await Category.countDocuments();
     if (catCount === 0) {
@@ -442,15 +442,28 @@ const initDB = async () => {
   }
 };
 
-// Shared DB init promise. On Vercel each cold start re-runs this; requests wait for it.
-// A failed attempt is cleared so the next request retries instead of failing forever.
+let migrationsExecuted = false;
+const runBackgroundTasks = async () => {
+  if (migrationsExecuted) return;
+  migrationsExecuted = true;
+  await initDB();
+};
+
+// Shared DB connection promise. On Vercel each cold start connects in ~150ms.
+// Background sync and migrations run asynchronously without blocking API requests.
 let dbReady = null;
 const ensureDB = () => {
   if (!dbReady) {
-    dbReady = initDB().catch((err) => {
-      dbReady = null;
-      throw err;
-    });
+    dbReady = connectDB()
+      .then(() => {
+        runBackgroundTasks().catch((err) => {
+          console.warn('[Server] Background task notice:', err.message);
+        });
+      })
+      .catch((err) => {
+        dbReady = null;
+        throw err;
+      });
   }
   return dbReady;
 };
@@ -470,6 +483,9 @@ app.use(
     crossOriginResourcePolicy: { policy: 'cross-origin' }, // Allows images to be displayed in frontend
   })
 );
+
+// High-speed HTTP response compression (gzip/deflate) to drastically reduce TTFB and payload size
+app.use(compression());
 
 // CORS configuration
 const allowedOrigins = [

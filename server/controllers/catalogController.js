@@ -1,6 +1,7 @@
 import Product from '../models/Product.js';
 import Category from '../models/Category.js';
 import { STANDALONE_SUBCAT_MAP } from './productController.js';
+import { getCachedCategoriesMetadata, setCachedCategoriesMetadata } from '../utils/catalogCache.js';
 
 /**
  * ============================================================================
@@ -818,105 +819,128 @@ export const getCatalog = async (req, res, next) => {
     const pageSize = Math.max(1, parseInt(limit, 10));
     const skip = (pageNumber - 1) * pageSize;
 
-    // 9. Execute Product Query & Categories Count
-    const [totalMatching, rawProducts, allCategoriesInDb, productCountAggregate, subcategoryCountAggregate] = await Promise.all([
-      Product.countDocuments(query),
-      Product.find(query)
-        .allowDiskUse(true)
-        .populate('category', 'name slug description image')
-        .sort(sortOption)
-        .skip(skip)
-        .limit(pageSize)
-        .lean(),
-      Category.find({ isActive: true }).select('name slug image subcategories icon tag description').lean(),
-      Product.aggregate([
-        { $match: { isPublished: true } },
-        { $group: { _id: '$category', count: { $sum: 1 } } },
-      ]).allowDiskUse(true),
-      Product.aggregate([
-        { $match: { isPublished: true, subcategory: { $exists: true, $ne: '' } } },
-        { $group: { _id: '$subcategory', count: { $sum: 1 } } },
-      ]).allowDiskUse(true),
-    ]);
+    // 9. Check in-memory metadata cache (categories, subcategories, product totals)
+    let cachedMeta = getCachedCategoriesMetadata();
+    let structuredCategories = cachedMeta ? cachedMeta.structuredCategories : null;
+    let allPublishedTotal = cachedMeta ? cachedMeta.allPublishedTotal : 0;
 
-    // 10. Calculate Real-Time Product Counts Per Category & Subcategory
-    const countMap = {};
-    productCountAggregate.forEach((item) => {
-      if (item._id) {
-        countMap[item._id.toString()] = item.count;
-      }
-    });
+    let totalMatching, rawProducts;
 
-    const subcategoryCountMap = {};
-    subcategoryCountAggregate.forEach((item) => {
-      if (item._id) {
-        subcategoryCountMap[item._id.toString().toLowerCase()] = item.count;
-      }
-    });
+    if (cachedMeta) {
+      [totalMatching, rawProducts] = await Promise.all([
+        Product.countDocuments(query),
+        Product.find(query)
+          .allowDiskUse(true)
+          .populate('category', 'name slug description image')
+          .sort(sortOption)
+          .skip(skip)
+          .limit(pageSize)
+          .lean(),
+      ]);
+    } else {
+      let allCategoriesInDb, productCountAggregate, subcategoryCountAggregate;
+      [totalMatching, rawProducts, allCategoriesInDb, productCountAggregate, subcategoryCountAggregate, allPublishedTotal] = await Promise.all([
+        Product.countDocuments(query),
+        Product.find(query)
+          .allowDiskUse(true)
+          .populate('category', 'name slug description image')
+          .sort(sortOption)
+          .skip(skip)
+          .limit(pageSize)
+          .lean(),
+        Category.find({ isActive: true }).select('name slug image subcategories icon tag description').lean(),
+        Product.aggregate([
+          { $match: { isPublished: true } },
+          { $group: { _id: '$category', count: { $sum: 1 } } },
+        ]).allowDiskUse(true),
+        Product.aggregate([
+          { $match: { isPublished: true, subcategory: { $exists: true, $ne: '' } } },
+          { $group: { _id: '$subcategory', count: { $sum: 1 } } },
+        ]).allowDiskUse(true),
+        Product.countDocuments({ isPublished: true }),
+      ]);
 
-    const categoryIdToSlugMap = {};
-    const categorySlugToCountMap = {};
-    allCategoriesInDb.forEach((cat) => {
-      const idStr = cat._id.toString();
-      categoryIdToSlugMap[idStr] = cat.slug;
-      const count = countMap[idStr] || 0;
-      categorySlugToCountMap[cat.slug] = count;
-    });
+      // 10. Calculate Real-Time Product Counts Per Category & Subcategory
+      const countMap = {};
+      productCountAggregate.forEach((item) => {
+        if (item._id) {
+          countMap[item._id.toString()] = item.count;
+        }
+      });
 
-    // Compute parent family totals strictly for the 10 master architectural categories
-    const structuredCategories = CATALOG_CATEGORY_GROUPS.map((group) => {
-      const dbMatch = allCategoriesInDb.find((c) => c.slug === group.slug);
-      const directTotal = categorySlugToCountMap[group.slug] || 0;
-      let groupTotal = directTotal;
+      const subcategoryCountMap = {};
+      subcategoryCountAggregate.forEach((item) => {
+        if (item._id) {
+          subcategoryCountMap[item._id.toString().toLowerCase()] = item.count;
+        }
+      });
 
-      const rawSubs = Array.isArray(dbMatch?.subcategories) && dbMatch.subcategories.length > 0
-        ? dbMatch.subcategories
-        : (group.subcategories || []);
+      const categoryIdToSlugMap = {};
+      const categorySlugToCountMap = {};
+      allCategoriesInDb.forEach((cat) => {
+        const idStr = cat._id.toString();
+        categoryIdToSlugMap[idStr] = cat.slug;
+        const count = countMap[idStr] || 0;
+        categorySlugToCountMap[cat.slug] = count;
+      });
 
-      const subcategoriesWithCount = rawSubs
-        .filter((s) => s.isActive !== false)
-        .map((sub) => {
-          const subSlug = (sub.slug || '').toLowerCase();
-          const subMatch = categorySlugToCountMap[subSlug] || 0;
-          const subDirectCount = subcategoryCountMap[subSlug] || 0;
-          let subCount = subDirectCount + subMatch;
-          if (subSlug === 'antique-chandelier' || subSlug === 'antic-chandelier') {
-            const aliasSlug = subSlug === 'antique-chandelier' ? 'antic-chandelier' : 'antique-chandelier';
-            subCount += (categorySlugToCountMap[aliasSlug] || 0) + (subcategoryCountMap[aliasSlug] || 0);
-          }
-          
-          groupTotal += subCount;
+      // Compute parent family totals strictly for the 10 master architectural categories
+      structuredCategories = CATALOG_CATEGORY_GROUPS.map((group) => {
+        const dbMatch = allCategoriesInDb.find((c) => c.slug === group.slug);
+        const directTotal = categorySlugToCountMap[group.slug] || 0;
+        let groupTotal = directTotal;
 
-          return {
-            name: sub.name,
-            slug: sub.slug,
-            image: sub.image || group.image || '/categories/wall-lamp.jpg',
-            desc: sub.desc || 'Architectural Typology',
-            count: subCount,
-            productCount: subCount,
-            link: `/catalog?category=${group.slug}&sub=${sub.slug}`,
-          };
-        });
+        const rawSubs = Array.isArray(dbMatch?.subcategories) && dbMatch.subcategories.length > 0
+          ? dbMatch.subcategories
+          : (group.subcategories || []);
 
-      return {
-        id: dbMatch?._id ? dbMatch._id.toString() : group.slug,
-        _id: dbMatch?._id ? dbMatch._id.toString() : group.slug,
-        name: group.name,
-        slug: group.slug,
-        icon: group.icon || '💡',
-        tag: group.tag || '',
-        description: group.description || dbMatch?.description || '',
-        image: group.image || dbMatch?.image || '/categories/wall-lamp.jpg',
-        total: groupTotal,
-        productCount: groupTotal,
-        count: groupTotal,
-        subcategories: subcategoriesWithCount,
-        sub: subcategoriesWithCount,
-      };
-    });
+        const subcategoriesWithCount = rawSubs
+          .filter((s) => s.isActive !== false)
+          .map((sub) => {
+            const subSlug = (sub.slug || '').toLowerCase();
+            const subMatch = categorySlugToCountMap[subSlug] || 0;
+            const subDirectCount = subcategoryCountMap[subSlug] || 0;
+            let subCount = subDirectCount + subMatch;
+            if (subSlug === 'antique-chandelier' || subSlug === 'antic-chandelier') {
+              const aliasSlug = subSlug === 'antique-chandelier' ? 'antic-chandelier' : 'antique-chandelier';
+              subCount += (categorySlugToCountMap[aliasSlug] || 0) + (subcategoryCountMap[aliasSlug] || 0);
+            }
+            
+            groupTotal += subCount;
 
-    // Total published products across all categories
-    const allPublishedTotal = await Product.countDocuments({ isPublished: true });
+            return {
+              name: sub.name,
+              slug: sub.slug,
+              image: sub.image || group.image || '/categories/wall-lamp.jpg',
+              desc: sub.desc || 'Architectural Typology',
+              count: subCount,
+              productCount: subCount,
+              link: `/catalog?category=${group.slug}&sub=${sub.slug}`,
+            };
+          });
+
+        return {
+          id: dbMatch?._id ? dbMatch._id.toString() : group.slug,
+          _id: dbMatch?._id ? dbMatch._id.toString() : group.slug,
+          name: group.name,
+          slug: group.slug,
+          icon: group.icon || '💡',
+          tag: group.tag || '',
+          description: group.description || dbMatch?.description || '',
+          image: group.image || dbMatch?.image || '/categories/wall-lamp.jpg',
+          total: groupTotal,
+          productCount: groupTotal,
+          count: groupTotal,
+          subcategories: subcategoriesWithCount,
+          sub: subcategoriesWithCount,
+        };
+      });
+
+      setCachedCategoriesMetadata({
+        structuredCategories,
+        allPublishedTotal,
+      });
+    }
 
     // 11. Active Category Metadata (for dynamic hero banner)
     let activeCategory = {
@@ -986,7 +1010,10 @@ export const getCatalog = async (req, res, next) => {
         price: p.price ?? 0,
         shortDescription: p.shortDescription || '',
         description: p.description || '',
-        images: pageSize > 50 && Array.isArray(p.images) ? p.images.slice(0, 2) : (p.images || []),
+        images: [
+          { url: coverImg, isCover: true, alt: p.name },
+          ...(hoverImg && hoverImg !== coverImg ? [{ url: hoverImg, isCover: false, alt: `${p.name} Alternate` }] : [])
+        ],
         primaryImage: coverImg,
         secondaryImage: hoverImg,
         specifications: p.specifications || {},

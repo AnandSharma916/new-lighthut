@@ -1,6 +1,7 @@
 import Category from '../models/Category.js';
 import Product from '../models/Product.js';
 import { slugify } from '../utils/slugify.js';
+import { clearCatalogCache } from '../utils/catalogCache.js';
 
 // @desc    Get all categories
 // @route   GET /api/categories
@@ -91,6 +92,8 @@ export const createCategory = async (req, res, next) => {
       seoDescription: seoDescription || description || '',
     });
 
+    clearCatalogCache();
+
     res.status(201).json({
       success: true,
       category,
@@ -167,6 +170,8 @@ export const updateCategory = async (req, res, next) => {
     }
 
     await category.save();
+
+    clearCatalogCache();
 
     res.status(200).json({
       success: true,
@@ -410,6 +415,8 @@ export const deleteCategory = async (req, res, next) => {
     }
 
     await category.deleteOne();
+
+    clearCatalogCache();
 
     res.status(200).json({
       success: true,

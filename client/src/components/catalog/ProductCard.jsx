@@ -231,6 +231,7 @@ export const ProductCard = ({ product, hidePricing = false }) => {
                 hasMultipleImages ? 'group-hover:scale-105 group-hover:opacity-0' : 'group-hover:scale-105'
               }`}
               loading="lazy"
+              decoding="async"
             />
 
             {/* Secondary HD Image (Smooth Crossfade only if dedicated 2nd image exists) */}
@@ -244,6 +245,7 @@ export const ProductCard = ({ product, hidePricing = false }) => {
                 alt={`${product.name} alternate view`}
                 className="absolute inset-0 max-w-full max-h-full w-auto h-auto m-auto object-contain object-center transform scale-100 transition-all duration-700 ease-out opacity-0 group-hover:opacity-100 group-hover:scale-105 filter brightness-[1.02] contrast-[1.02]"
                 loading="lazy"
+                decoding="async"
               />
             )}
           </Link>
