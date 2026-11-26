@@ -568,6 +568,41 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Diagnostic check to inspect MongoDB indexes & execution plan
+app.get('/api/health/diagnostics', async (req, res) => {
+  try {
+    const indexes = await Product.collection.indexes();
+    const count = await Product.countDocuments();
+    const sample = await Product.findOne().select('name images').lean();
+    const imgSize = sample?.images?.reduce((sum, img) => sum + (img.url?.length || 0), 0) || 0;
+
+    const explain1 = await Product.find({ isPublished: true })
+      .select('_id name')
+      .sort({ subcategory: 1, isFeatured: -1, sortOrder: 1, createdAt: -1 })
+      .limit(12)
+      .explain('executionStats');
+
+    res.status(200).json({
+      success: true,
+      productCount: count,
+      sampleDocBase64Bytes: imgSize,
+      indexes,
+      queryExplain: {
+        winningPlan: explain1.queryPlanner?.winningPlan,
+        executionStats: {
+          executionSuccess: explain1.executionStats?.executionSuccess,
+          nReturned: explain1.executionStats?.nReturned,
+          executionTimeMillis: explain1.executionStats?.executionTimeMillis,
+          totalKeysExamined: explain1.executionStats?.totalKeysExamined,
+          totalDocsExamined: explain1.executionStats?.totalDocsExamined,
+        },
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // Keep old e27 category/product links working (e.g. ?category=e27-wall-lamp)
 app.use('/api', (req, res, next) => {
   if (req.url.includes('e27')) {
