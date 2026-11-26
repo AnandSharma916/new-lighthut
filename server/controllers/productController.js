@@ -133,18 +133,86 @@ export const getProducts = async (req, res, next) => {
         subConditions.push({ name: /4012|antic|antique/i });
         subConditions.push({ sku: /4012|antic|antique/i });
       } else if (targetSub === 'led-chandelier' || targetSub === 'led chandelier') {
-        subConditions.push({ subcategory: /led-chandelier/i });
-        subConditions.push({ subcategoryName: /led chandelier/i });
-        subConditions.push({ name: /led chd|led chandelier|\bled\b/i });
-        subConditions.push({ sku: /\bled\b/i });
+        const ledCats = await Category.find({ slug: 'led-chandelier' }).select('_id');
+        subConditions.push({
+          $and: [
+            {
+              $or: [
+                { subcategory: /^led-chandelier$/i },
+                { subcategoryName: /^led chandelier$/i },
+                ...(ledCats.length > 0 ? [{ category: { $in: ledCats.map(lc => lc._id) } }] : [])
+              ]
+            },
+            {
+              subcategory: {
+                $nin: [
+                  'profile-chandelier',
+                  'modern-chandelier',
+                  'fan-chandelier',
+                  'e14-chandelier',
+                  'glass-chandelier',
+                  'antique-chandelier',
+                  'antic-chandelier',
+                  'classic-chandelier',
+                  'italian-chandelier',
+                  'crystal-chandelier',
+                  'ceiling-chandelier',
+                ]
+              }
+            }
+          ]
+        });
       } else if (targetSub === 'glass-chandelier' || targetSub === 'glass chandelier') {
         subConditions.push({ subcategory: /glass-chandelier/i });
         subConditions.push({ subcategoryName: /glass/i });
         subConditions.push({ name: /glass/i });
         subConditions.push({ sku: /glass/i });
+        const glassCats = await Category.find({ slug: 'glass-chandelier' }).select('_id');
+        glassCats.forEach(gc => subConditions.push({ category: gc._id }));
       } else if (targetSub === 'classic-chandelier' || targetSub === 'classic chandelier') {
         subConditions.push({ subcategory: /classic-chandelier/i });
         subConditions.push({ subcategoryName: /classic/i });
+        const classicCats = await Category.find({ slug: 'classic-chandelier' }).select('_id');
+        classicCats.forEach(cc => subConditions.push({ category: cc._id }));
+      } else if (targetSub === 'fan-chandelier' || targetSub === 'fan chandelier') {
+        subConditions.push({ subcategory: /fan-chandelier/i });
+        subConditions.push({ subcategoryName: /fan/i });
+        subConditions.push({ name: /fan/i });
+        subConditions.push({ sku: /fan/i });
+        const fanCats = await Category.find({ slug: 'fan-chandelier' }).select('_id');
+        fanCats.forEach(fc => subConditions.push({ category: fc._id }));
+      } else if (targetSub === 'profile-chandelier' || targetSub === 'profile chandelier') {
+        subConditions.push({ subcategory: /profile-chandelier/i });
+        subConditions.push({ subcategoryName: /profile/i });
+        subConditions.push({ name: /profile/i });
+        const profileCats = await Category.find({ slug: 'profile-chandelier' }).select('_id');
+        profileCats.forEach(pc => subConditions.push({ category: pc._id }));
+      } else if (targetSub === 'modern-chandelier' || targetSub === 'modern chandelier') {
+        subConditions.push({ subcategory: /modern-chandelier/i });
+        subConditions.push({ subcategoryName: /modern/i });
+        subConditions.push({ name: /modern/i });
+        const modernCats = await Category.find({ slug: 'modern-chandelier' }).select('_id');
+        modernCats.forEach(mc => subConditions.push({ category: mc._id }));
+      } else if (targetSub === 'e14-chandelier' || targetSub === 'e14 chandelier') {
+        subConditions.push({ subcategory: /e14-chandelier/i });
+        subConditions.push({ subcategoryName: /e14/i });
+        subConditions.push({ name: /e14/i });
+        subConditions.push({ sku: /e14/i });
+        const e14Cats = await Category.find({ slug: 'e14-chandelier' }).select('_id');
+        e14Cats.forEach(ec => subConditions.push({ category: ec._id }));
+      } else if (targetSub === 'italian-chandelier' || targetSub === 'italian chandelier') {
+        subConditions.push({ subcategory: /italian-chandelier/i });
+        subConditions.push({ subcategoryName: /italian/i });
+        subConditions.push({ name: /italian/i });
+        subConditions.push({ sku: /italian/i });
+        const italianCats = await Category.find({ slug: 'italian-chandelier' }).select('_id');
+        italianCats.forEach(ic => subConditions.push({ category: ic._id }));
+      } else if (targetSub === 'crystal-chandelier' || targetSub === 'crystal chandelier') {
+        subConditions.push({ subcategory: /crystal-chandelier/i });
+        subConditions.push({ subcategoryName: /crystal/i });
+        subConditions.push({ name: /crystal/i });
+        const crystalCats = await Category.find({ slug: 'crystal-chandelier' }).select('_id');
+        crystalCats.forEach(cc => subConditions.push({ category: cc._id }));
       }
       query.$or = query.$or ? [...query.$or, ...subConditions] : subConditions;
     }

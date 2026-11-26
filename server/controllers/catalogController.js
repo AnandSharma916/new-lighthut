@@ -604,12 +604,49 @@ export const getCatalog = async (req, res, next) => {
         }).select('_id');
         antiqueCats.forEach(ac => subConditions.push({ category: ac._id }));
       } else if (targetSub === 'led-chandelier' || targetSub === 'led chandelier') {
-        subConditions.push({ subcategory: /led-chandelier/i });
-        subConditions.push({ subcategoryName: /led chandelier/i });
-        subConditions.push({ name: /led chd|led chandelier|\bled\b/i });
-        subConditions.push({ sku: /\bled\b/i });
         const ledCats = await Category.find({ slug: 'led-chandelier' }).select('_id');
-        ledCats.forEach(lc => subConditions.push({ category: lc._id }));
+        subConditions.push({
+          $and: [
+            {
+              $or: [
+                { subcategory: /^led-chandelier$/i },
+                { subcategoryName: /^led chandelier$/i },
+                ...(ledCats.length > 0 ? [{ category: { $in: ledCats.map(lc => lc._id) } }] : [])
+              ]
+            },
+            {
+              subcategory: {
+                $nin: [
+                  'profile-chandelier',
+                  'modern-chandelier',
+                  'fan-chandelier',
+                  'e14-chandelier',
+                  'glass-chandelier',
+                  'antique-chandelier',
+                  'antic-chandelier',
+                  'classic-chandelier',
+                  'italian-chandelier',
+                  'crystal-chandelier',
+                  'ceiling-chandelier',
+                ]
+              }
+            }
+          ]
+        });
+      } else if (targetSub === 'fan-chandelier' || targetSub === 'fan chandelier') {
+        subConditions.push({ subcategory: /fan-chandelier/i });
+        subConditions.push({ subcategoryName: /fan/i });
+        subConditions.push({ name: /fan/i });
+        subConditions.push({ sku: /fan/i });
+        const fanCats = await Category.find({ slug: 'fan-chandelier' }).select('_id');
+        fanCats.forEach(fc => subConditions.push({ category: fc._id }));
+      } else if (targetSub === 'e14-chandelier' || targetSub === 'e14 chandelier') {
+        subConditions.push({ subcategory: /e14-chandelier/i });
+        subConditions.push({ subcategoryName: /e14/i });
+        subConditions.push({ name: /e14/i });
+        subConditions.push({ sku: /e14/i });
+        const e14Cats = await Category.find({ slug: 'e14-chandelier' }).select('_id');
+        e14Cats.forEach(ec => subConditions.push({ category: ec._id }));
       } else if (targetSub === 'glass-chandelier' || targetSub === 'glass chandelier') {
         subConditions.push({ subcategory: /glass-chandelier/i });
         subConditions.push({ subcategoryName: /glass/i });

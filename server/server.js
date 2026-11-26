@@ -273,6 +273,42 @@ const initDB = async () => {
           console.log(`[Server] Updated ${updatedAnticSubs.modifiedCount} product(s) to subcategory antique-chandelier.`);
         }
 
+        // Ensure Fan Chandelier products get assigned to fan-chandelier
+        await Product.updateMany(
+          {
+            category: chandelierParent._id,
+            $or: [{ name: /FAN/i }, { sku: /FAN/i }]
+          },
+          { $set: { subcategory: 'fan-chandelier', subcategoryName: 'Fan chandelier' } }
+        );
+
+        // Ensure Profile Chandelier products get assigned to profile-chandelier
+        await Product.updateMany(
+          {
+            category: chandelierParent._id,
+            $or: [{ name: /PROFILE/i }, { sku: /PROFILE/i }, { name: /B2045/i }, { sku: /B2045/i }]
+          },
+          { $set: { subcategory: 'profile-chandelier', subcategoryName: 'Profile Chandelier' } }
+        );
+
+        // Ensure Modern Chandelier products get assigned to modern-chandelier
+        await Product.updateMany(
+          {
+            category: chandelierParent._id,
+            $or: [{ name: /MODERN/i }, { sku: /MODERN/i }, { name: /9629/i }, { sku: /9629/i }]
+          },
+          { $set: { subcategory: 'modern-chandelier', subcategoryName: 'Modern chandelier' } }
+        );
+
+        // Ensure E14 Chandelier products get assigned to e14-chandelier
+        await Product.updateMany(
+          {
+            category: chandelierParent._id,
+            $or: [{ name: /E14/i }, { sku: /E14/i }, { name: /8051/i }, { sku: /8051/i }, { name: /6098/i }, { name: /7688/i }]
+          },
+          { $set: { subcategory: 'e14-chandelier', subcategoryName: 'E14 Chandelier' } }
+        );
+
         // Assign products with LED in title or sku under Chandelier that have an empty subcategory to led-chandelier
         const remappedLedProducts = await Product.updateMany(
           {

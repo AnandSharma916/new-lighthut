@@ -248,12 +248,27 @@ export const Catalog = () => {
         );
       }
       if (isLedChandelier) {
+        // Strictly exclude other specific chandelier types even if they contain "LED" in title or SKU!
+        const isOtherType =
+          pSub.includes('profile') || pCat.includes('profile') || pName.includes('profile') || pSku.includes('2045') ||
+          pSub.includes('modern') || pCat.includes('modern') || pSku.includes('9629') ||
+          pSub.includes('fan') || pCat.includes('fan') || pSku.includes('223') ||
+          pSub.includes('e14') || pCat.includes('e14') || pSku.includes('e14') ||
+          pSub.includes('glass') || pCat.includes('glass') ||
+          pSub.includes('antique') || pSub.includes('antic') || pCat.includes('antique') || pCat.includes('antic') ||
+          pSub.includes('classic') || pCat.includes('classic') ||
+          pSub.includes('italian') || pCat.includes('italian') ||
+          pSub.includes('crystal') || pCat.includes('crystal');
+
+        if (isOtherType) return false;
+
         return (
           pSub === 'led-chandelier' ||
-          pSub.includes('led') ||
-          pName.includes('led') ||
-          pSku.includes('led') ||
-          pSlug.includes('led')
+          pSub === 'led chandelier' ||
+          pCat === 'led-chandelier' ||
+          pCat === 'led chandelier' ||
+          pName.includes('led chandelier') ||
+          pName.includes('led chd')
         );
       }
       if (isGlassChandelier) {
@@ -408,12 +423,26 @@ export const Catalog = () => {
       );
     }
     if (target === 'led-chandelier' || target === 'led chandelier') {
+      if (
+        s.includes('profile') || c.includes('profile') || n.includes('profile') ||
+        s.includes('modern') || c.includes('modern') ||
+        s.includes('fan') || c.includes('fan') ||
+        s.includes('e14') || c.includes('e14') ||
+        s.includes('glass') || c.includes('glass') ||
+        s.includes('antique') || s.includes('antic') || c.includes('antique') || c.includes('antic') ||
+        s.includes('classic') || c.includes('classic') ||
+        s.includes('italian') || c.includes('italian') ||
+        s.includes('crystal') || c.includes('crystal')
+      ) {
+        return false;
+      }
       return (
         s === 'led-chandelier' ||
-        s.includes('led') ||
-        n.includes('led chd') ||
-        n.includes('led') ||
-        sl.includes('led')
+        s === 'led chandelier' ||
+        c === 'led-chandelier' ||
+        c === 'led chandelier' ||
+        n.includes('led chandelier') ||
+        n.includes('led chd')
       );
     }
     if (target.includes('classic')) {

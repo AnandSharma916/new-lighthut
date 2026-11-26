@@ -75,24 +75,33 @@ export const resolveCanonicalCategoryAndSub = (categories, rawCategory, rawSubca
 
   if (!subcategory && isChandelier) {
     const combined = `${productName} ${productSku}`.toLowerCase();
-    if (combined.includes('led')) {
-      subcategory = 'led-chandelier';
-      subcategoryName = 'LED Chandelier';
+    if (combined.includes('fan')) {
+      subcategory = 'fan-chandelier';
+      subcategoryName = 'Fan Chandelier';
+    } else if (combined.includes('profile')) {
+      subcategory = 'profile-chandelier';
+      subcategoryName = 'Profile Chandelier';
+    } else if (combined.includes('modern')) {
+      subcategory = 'modern-chandelier';
+      subcategoryName = 'Modern Chandelier';
+    } else if (combined.includes('e14')) {
+      subcategory = 'e14-chandelier';
+      subcategoryName = 'E14 Chandelier';
     } else if (combined.includes('glass')) {
       subcategory = 'glass-chandelier';
       subcategoryName = 'Glass Chandelier';
     } else if (combined.includes('antique') || combined.includes('antic') || combined.includes('4012')) {
       subcategory = 'antique-chandelier';
       subcategoryName = 'Antique Chandelier';
-    } else if (combined.includes('e14')) {
-      subcategory = 'e14-chandelier';
-      subcategoryName = 'E14 Chandelier';
-    } else if (combined.includes('profile')) {
-      subcategory = 'profile-chandelier';
-      subcategoryName = 'Profile Chandelier';
-    } else if (combined.includes('fan')) {
-      subcategory = 'fan-chandelier';
-      subcategoryName = 'Fan Chandelier';
+    } else if (combined.includes('italian')) {
+      subcategory = 'italian-chandelier';
+      subcategoryName = 'Italian Chandelier';
+    } else if (combined.includes('crystal')) {
+      subcategory = 'crystal-chandelier';
+      subcategoryName = 'Crystal Chandelier';
+    } else if (combined.includes('led')) {
+      subcategory = 'led-chandelier';
+      subcategoryName = 'LED Chandelier';
     }
   }
 
