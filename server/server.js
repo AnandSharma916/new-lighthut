@@ -571,32 +571,60 @@ app.get('/api/health', (req, res) => {
 // Diagnostic check to inspect MongoDB indexes & execution plan
 app.get('/api/health/diagnostics', async (req, res) => {
   try {
-    const indexes = await Product.collection.indexes();
-    const count = await Product.countDocuments();
-    const sample = await Product.findOne().select('name images').lean();
-    const imgSize = sample?.images?.reduce((sum, img) => sum + (img.url?.length || 0), 0) || 0;
+    const t0 = Date.now();
+    const count = await Product.countDocuments({ isPublished: true });
+    const tCount = Date.now() - t0;
 
-    const explain1 = await Product.find({ isPublished: true })
-      .select('_id name')
+    const t1 = Date.now();
+    const noImages = await Product.find({ isPublished: true })
+      .select('-images')
       .sort({ subcategory: 1, isFeatured: -1, sortOrder: 1, createdAt: -1 })
       .limit(12)
-      .explain('executionStats');
+      .lean();
+    const tFindNoImages = Date.now() - t1;
+
+    const t2 = Date.now();
+    const populatedNoImages = await Product.find({ isPublished: true })
+      .select('-images')
+      .populate('category', 'name slug')
+      .sort({ subcategory: 1, isFeatured: -1, sortOrder: 1, createdAt: -1 })
+      .limit(12)
+      .lean();
+    const tPopulateNoImages = Date.now() - t2;
+
+    const t3 = Date.now();
+    const withImages = await Product.find({ isPublished: true })
+      .sort({ subcategory: 1, isFeatured: -1, sortOrder: 1, createdAt: -1 })
+      .limit(12)
+      .lean();
+    const tFindWithImages = Date.now() - t3;
+
+    const t4 = Date.now();
+    const catAgg = await Product.aggregate([
+      { $match: { isPublished: true } },
+      { $group: { _id: '$category', count: { $sum: 1 } } },
+    ]).allowDiskUse(true);
+    const tCatAgg = Date.now() - t4;
+
+    const t5 = Date.now();
+    const subAgg = await Product.aggregate([
+      { $match: { isPublished: true, subcategory: { $exists: true, $ne: '' } } },
+      { $group: { _id: '$subcategory', count: { $sum: 1 } } },
+    ]).allowDiskUse(true);
+    const tSubAgg = Date.now() - t5;
 
     res.status(200).json({
       success: true,
-      productCount: count,
-      sampleDocBase64Bytes: imgSize,
-      indexes,
-      queryExplain: {
-        winningPlan: explain1.queryPlanner?.winningPlan,
-        executionStats: {
-          executionSuccess: explain1.executionStats?.executionSuccess,
-          nReturned: explain1.executionStats?.nReturned,
-          executionTimeMillis: explain1.executionStats?.executionTimeMillis,
-          totalKeysExamined: explain1.executionStats?.totalKeysExamined,
-          totalDocsExamined: explain1.executionStats?.totalDocsExamined,
-        },
+      timings: {
+        countDocumentsMs: tCount,
+        findNoImagesMs: tFindNoImages,
+        populateNoImagesMs: tPopulateNoImages,
+        findWithImagesMs: tFindWithImages,
+        catAggMs: tCatAgg,
+        subAggMs: tSubAgg,
+        totalDiagMs: Date.now() - t0,
       },
+      count,
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
