@@ -563,6 +563,9 @@ app.get('/api/health', (req, res) => {
   res.status(200).json({
     success: true,
     status: 'operational',
+    dbState: Category.db?.readyState ?? null,
+    dbHost: Category.db?.host ?? null,
+    dbName: Category.db?.name ?? null,
     service: 'LightHut Lighting Catalog API',
     timestamp: new Date().toISOString(),
   });
