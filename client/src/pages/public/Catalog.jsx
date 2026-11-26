@@ -268,7 +268,9 @@ export const Catalog = () => {
           pCat === 'led-chandelier' ||
           pCat === 'led chandelier' ||
           pName.includes('led chandelier') ||
-          pName.includes('led chd')
+          pName.includes('led chd') ||
+          /\bled\b/i.test(pName) ||
+          /\bled\b/i.test(pSku)
         );
       }
       if (isGlassChandelier) {
@@ -442,7 +444,9 @@ export const Catalog = () => {
         c === 'led-chandelier' ||
         c === 'led chandelier' ||
         n.includes('led chandelier') ||
-        n.includes('led chd')
+        n.includes('led chd') ||
+        /\bled\b/i.test(n) ||
+        /\bled\b/i.test(p.sku || '')
       );
     }
     if (target.includes('classic')) {

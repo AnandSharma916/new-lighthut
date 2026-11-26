@@ -624,6 +624,8 @@ export const getCatalog = async (req, res, next) => {
               $or: [
                 { subcategory: /^led-chandelier$/i },
                 { subcategoryName: /^led chandelier$/i },
+                { name: /\bled\b/i },
+                { sku: /\bled\b/i },
                 ...(ledCats.length > 0 ? [{ category: { $in: ledCats.map(lc => lc._id) } }] : [])
               ]
             },

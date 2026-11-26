@@ -440,12 +440,21 @@ export const ProductForm = () => {
       const otherItems = validImages.filter((img) => !img.isCover);
       const finalImagesList = coverItem ? [coverItem, ...otherItems] : validImages;
 
+      const subSlug = (formData.subcategory || '').trim().toLowerCase();
+      let subName = (formData.subcategoryName || '').trim();
+      if (subSlug && !subName) {
+        subName = subSlug
+          .split('-')
+          .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+          .join(' ');
+      }
+
       const payload = {
         name: formData.name.trim(),
         title: formData.name.trim(),
         category: formData.category,
-        subcategory: (formData.subcategory || '').trim().toLowerCase(),
-        subcategoryName: (formData.subcategoryName || '').trim(),
+        subcategory: subSlug,
+        subcategoryName: subName,
         price: formData.price !== '' ? Number(formData.price) : 0,
         description: formData.description.trim(),
         shortDescription: formData.description.trim().slice(0, 160),

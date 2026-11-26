@@ -607,13 +607,22 @@ export const ProductList = () => {
         }
       });
 
+      const subSlug = (form.subcategory || '').trim().toLowerCase();
+      let subName = (form.subcategoryName || '').trim();
+      if (subSlug && !subName) {
+        subName = subSlug
+          .split('-')
+          .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+          .join(' ');
+      }
+
       const payload = {
         name: form.name.trim(),
         title: form.name.trim(),
         sku: form.sku && !/^LH-\d{6}-\d{3}$/i.test(form.sku.trim()) ? form.sku.trim().toUpperCase() : '',
         category: chosenCatId,
-        subcategory: (form.subcategory || '').trim().toLowerCase(),
-        subcategoryName: (form.subcategoryName || '').trim(),
+        subcategory: subSlug,
+        subcategoryName: subName,
         description: form.description.trim(),
         shortDescription: form.description.trim().slice(0, 160),
         price: form.price !== '' ? Number(form.price) : 0,
