@@ -842,6 +842,7 @@ export const getCatalog = async (req, res, next) => {
       [totalMatching, rawProducts] = await Promise.all([
         Product.countDocuments(query),
         Product.find(query)
+          .select({ 'images.url': 0 })
           .allowDiskUse(true)
           .populate('category', 'name slug description image')
           .sort(sortOption)
@@ -854,6 +855,7 @@ export const getCatalog = async (req, res, next) => {
       [totalMatching, rawProducts, allCategoriesInDb, productCountAggregate, subcategoryCountAggregate, allPublishedTotal] = await Promise.all([
         Product.countDocuments(query),
         Product.find(query)
+          .select({ 'images.url': 0 })
           .allowDiskUse(true)
           .populate('category', 'name slug description image')
           .sort(sortOption)
@@ -995,18 +997,9 @@ export const getCatalog = async (req, res, next) => {
 
     // 12. Format Products cleanly for client consumption
     const products = rawProducts.map((p) => {
-      const coverImg =
-        p.mainImage ||
-        p.images?.find((img) => img.isCover)?.url ||
-        p.images?.[0]?.url ||
-        p.category?.image ||
-        '/showroom-hero-hd.jpg';
-
-      const hoverImg =
-        p.images?.[1]?.url ||
-        p.images?.[0]?.url ||
-        p.mainImage ||
-        coverImg;
+      const coverUrl = `/api/products/${p._id}/image/cover`;
+      const hasSecondary = Array.isArray(p.images) && p.images.length > 1;
+      const hoverUrl = hasSecondary ? `/api/products/${p._id}/image/1` : coverUrl;
 
       return {
         _id: p._id,
@@ -1023,11 +1016,11 @@ export const getCatalog = async (req, res, next) => {
         shortDescription: p.shortDescription || '',
         description: p.description || '',
         images: [
-          { url: coverImg, isCover: true, alt: p.name },
-          ...(hoverImg && hoverImg !== coverImg ? [{ url: hoverImg, isCover: false, alt: `${p.name} Alternate` }] : [])
+          { url: coverUrl, isCover: true, alt: p.name },
+          ...(hasSecondary ? [{ url: hoverUrl, isCover: false, alt: `${p.name} Alternate` }] : [])
         ],
-        primaryImage: coverImg,
-        secondaryImage: hoverImg,
+        primaryImage: coverUrl,
+        secondaryImage: hoverUrl,
         specifications: p.specifications || {},
         isFeatured: Boolean(p.isFeatured),
         isPublished: Boolean(p.isPublished),

@@ -3,6 +3,7 @@ import {
   getProducts,
   getProductBySlug,
   getProductById,
+  getProductImage,
   getProductFormOptions,
   createProduct,
   updateProduct,
@@ -18,6 +19,11 @@ router.get('/', getProducts);
 // Dropdown options for selecting which category & subcategory to put products into
 router.get('/form-options', getProductFormOptions);
 router.get('/options', getProductFormOptions);
+
+// Public Image binary stream with immutable CDN caching
+router.get('/:id/image/:imageIndex', getProductImage);
+router.get('/:id/image', getProductImage);
+
 router.get('/:slug', getProductBySlug);
 
 // Protected Admin Routes

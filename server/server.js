@@ -559,50 +559,14 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Serve public assets (categories, banners, certificates, catalog PDF)
 app.use(express.static(path.join(__dirname, '../client/public')));
 
-// Diagnostic check: Two-Stage Query vs Single-Stage Query
-app.get('/api/health/diagnostics', async (req, res) => {
-  try {
-    await ensureDB();
-    const t0 = Date.now();
-    // Step 1: Index-only scan for 12 IDs
-    const idDocs = await Product.find({ isPublished: true })
-      .select('_id')
-      .sort({ subcategory: 1, isFeatured: -1, sortOrder: 1, createdAt: -1 })
-      .limit(12)
-      .lean();
-    const tStep1 = Date.now() - t0;
-
-    // Step 2: Fetch only those 12 documents by ID
-    const t1 = Date.now();
-    const ids = idDocs.map((d) => d._id);
-    const rawProducts = await Product.find({ _id: { $in: ids } })
-      .populate('category', 'name slug')
-      .lean();
-    const tStep2 = Date.now() - t1;
-
-    const docBreakdown = rawProducts.map((p) => {
-      const fieldSizes = {};
-      for (const [k, v] of Object.entries(p)) {
-        fieldSizes[k] = JSON.stringify(v)?.length || 0;
-      }
-      return {
-        _id: p._id,
-        name: p.name,
-        slug: p.slug,
-        fieldSizes,
-      };
-    });
-
-    res.status(200).json({
-      success: true,
-      tStep1IdsMs: tStep1,
-      tStep2DocsMs: tStep2,
-      totalTwoStageMs: Date.now() - t0,
-      docBreakdown,
-    });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
+// Lightweight Health Check
+app.get('/api/health', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    uptime: process.uptime(),
+    dbState: Category.db?.readyState === 1 ? 'connected' : 'connecting',
+    timestamp: new Date().toISOString(),
+  });
 });
 
 // Keep old e27 category/product links working (e.g. ?category=e27-wall-lamp)

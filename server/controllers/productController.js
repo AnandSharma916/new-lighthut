@@ -346,38 +346,41 @@ export const getProducts = async (req, res, next) => {
     const pageSize = Math.max(1, parseInt(limit, 10));
     const skip = (pageNumber - 1) * pageSize;
 
+    const isAdmin = admin === 'true';
+
+    let productQuery = Product.find(query)
+      .allowDiskUse(true)
+      .populate('category', 'name slug')
+      .sort(sortOption)
+      .skip(skip)
+      .limit(pageSize)
+      .lean();
+
+    if (!isAdmin) {
+      // Exclude base64 image data from MongoDB WAN transfer for instant response
+      productQuery = productQuery.select({ 'images.url': 0 });
+    }
+
     const [total, rawProducts] = await Promise.all([
       Product.countDocuments(query),
-      Product.find(query)
-        .allowDiskUse(true)
-        .populate('category', 'name slug')
-        .sort(sortOption)
-        .skip(skip)
-        .limit(pageSize)
-        .lean(),
+      productQuery,
     ]);
 
-    const products = admin === 'true'
+    const products = isAdmin
       ? rawProducts
       : rawProducts.map((p) => {
-          const coverImg =
-            p.mainImage ||
-            p.images?.find((img) => img.isCover)?.url ||
-            p.images?.[0]?.url ||
-            '/showroom-hero-hd.jpg';
-          const hoverImg =
-            p.images?.[1]?.url ||
-            p.images?.[0]?.url ||
-            coverImg;
+          const coverUrl = `/api/products/${p._id}/image/cover`;
+          const hasSecondary = Array.isArray(p.images) && p.images.length > 1;
+          const hoverUrl = hasSecondary ? `/api/products/${p._id}/image/1` : coverUrl;
 
           return {
             ...p,
             images: [
-              { url: coverImg, isCover: true, alt: p.name },
-              ...(hoverImg && hoverImg !== coverImg ? [{ url: hoverImg, isCover: false, alt: `${p.name} Alternate` }] : [])
+              { url: coverUrl, isCover: true, alt: p.name },
+              ...(hasSecondary ? [{ url: hoverUrl, isCover: false, alt: `${p.name} Alternate` }] : [])
             ],
-            primaryImage: coverImg,
-            secondaryImage: hoverImg,
+            primaryImage: coverUrl,
+            secondaryImage: hoverUrl,
           };
         });
 
@@ -424,30 +427,25 @@ export const getProductBySlug = async (req, res, next) => {
         _id: { $ne: product._id },
         isPublished: true,
       })
+        .select({ 'images.url': 0 })
         .populate('category', 'name slug')
         .limit(12)
         .sort({ sortOrder: 1, createdAt: -1 })
         .lean();
 
       relatedProducts = rawRelated.map((p) => {
-        const coverImg =
-          p.mainImage ||
-          p.images?.find((img) => img.isCover)?.url ||
-          p.images?.[0]?.url ||
-          '/showroom-hero-hd.jpg';
-        const hoverImg =
-          p.images?.[1]?.url ||
-          p.images?.[0]?.url ||
-          coverImg;
+        const coverUrl = `/api/products/${p._id}/image/cover`;
+        const hasSecondary = Array.isArray(p.images) && p.images.length > 1;
+        const hoverUrl = hasSecondary ? `/api/products/${p._id}/image/1` : coverUrl;
 
         return {
           ...p,
           images: [
-            { url: coverImg, isCover: true, alt: p.name },
-            ...(hoverImg && hoverImg !== coverImg ? [{ url: hoverImg, isCover: false, alt: `${p.name} Alternate` }] : [])
+            { url: coverUrl, isCover: true, alt: p.name },
+            ...(hasSecondary ? [{ url: hoverUrl, isCover: false, alt: `${p.name} Alternate` }] : [])
           ],
-          primaryImage: coverImg,
-          secondaryImage: hoverImg,
+          primaryImage: coverUrl,
+          secondaryImage: hoverUrl,
         };
       });
     }
@@ -459,6 +457,66 @@ export const getProductBySlug = async (req, res, next) => {
     });
   } catch (error) {
     next(error);
+  }
+};
+
+// @desc    Stream product image binary with permanent CDN caching
+// @route   GET /api/products/:id/image/:imageIndex?
+// @access  Public
+export const getProductImage = async (req, res, next) => {
+  try {
+    const { id, imageIndex } = req.params;
+    const isObjectId = /^[0-9a-fA-F]{24}$/.test(id);
+    const product = await Product.findOne(
+      isObjectId ? { _id: id } : { slug: id }
+    )
+      .select('images mainImage category')
+      .populate('category', 'image');
+
+    let imgUrl = null;
+    if (product) {
+      if (Array.isArray(product.images) && product.images.length > 0) {
+        let img;
+        if (imageIndex === 'cover' || imageIndex === undefined) {
+          img = product.images.find((i) => i.isCover) || product.images[0];
+        } else {
+          const idx = parseInt(imageIndex, 10) || 0;
+          img = product.images[idx] || product.images[0];
+        }
+        imgUrl = img?.url;
+      }
+      if (!imgUrl && product.mainImage) {
+        imgUrl = product.mainImage;
+      }
+      if (!imgUrl && product.category?.image) {
+        imgUrl = product.category.image;
+      }
+    }
+
+    if (!imgUrl) {
+      return res.redirect('/showroom-hero-hd.jpg');
+    }
+
+    // If it's already an external or static file path (e.g. /products/...)
+    if (!imgUrl.startsWith('data:image')) {
+      res.set('Cache-Control', 'public, max-age=86400');
+      return res.redirect(imgUrl);
+    }
+
+    // Base64 data URL
+    const matches = imgUrl.match(/^data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,(.+)$/);
+    if (!matches) {
+      return res.redirect('/showroom-hero-hd.jpg');
+    }
+
+    const contentType = matches[1];
+    const imageBuffer = Buffer.from(matches[2], 'base64');
+
+    res.set('Content-Type', contentType);
+    res.set('Cache-Control', 'public, max-age=31536000, immutable');
+    res.send(imageBuffer);
+  } catch (err) {
+    res.redirect('/showroom-hero-hd.jpg');
   }
 };
 
