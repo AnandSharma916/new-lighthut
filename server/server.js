@@ -53,7 +53,14 @@ const initDB = async () => {
       }
     }
 
-    // Make SKU optional: drop legacy unique index and wipe auto-generated random SKU patterns
+    // One-time startup migrations check: executed only once across all serverless invocations
+    const migrations = Category.db.collection('migrations');
+    const MIGRATION_KEY = 'server-init-chandelier-indexes-v3';
+    const migrationApplied = await migrations.findOne({ _id: MIGRATION_KEY });
+
+    if (!migrationApplied) {
+      console.log('[Server] Running one-time startup migrations and indexes sync...');
+      // Make SKU optional: drop legacy unique index and wipe auto-generated random SKU patterns
     try {
       await Product.collection.dropIndex('sku_1');
       console.log('[Server] Dropped legacy sku_1 unique index to allow optional empty SKUs.');
@@ -424,6 +431,14 @@ const initDB = async () => {
     } catch (profilePendantCatErr) {
       console.warn('[Server] LED Profile Pendant standalone creation notice:', profilePendantCatErr.message);
     }
+
+    try {
+      await migrations.insertOne({ _id: MIGRATION_KEY, appliedAt: new Date() });
+      console.log('[Server] Startup migrations completed and marked as applied.');
+    } catch (migRecordErr) {
+      // Ignored if already inserted
+    }
+  }
   } catch (err) {
     console.warn('[Server] Auto-seed/sync check notice:', err.message);
   }
