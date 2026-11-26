@@ -467,7 +467,8 @@ const runBackgroundTasks = async () => {
 // Shared DB connection promise. On Vercel each cold start connects in ~150ms.
 // Background sync and migrations run asynchronously without blocking API requests.
 let dbReady = null;
-const ensureDB = () => {
+const ensureDB = async () => {
+  if (Category.db?.readyState === 1) return;
   if (!dbReady) {
     dbReady = connectDB()
       .then(() => {
@@ -563,56 +564,9 @@ app.get('/api/health', (req, res) => {
   res.status(200).json({
     success: true,
     status: 'operational',
-    dbState: Category.db?.readyState ?? null,
-    dbHost: Category.db?.host ?? null,
-    dbName: Category.db?.name ?? null,
     service: 'LightHut Lighting Catalog API',
     timestamp: new Date().toISOString(),
   });
-});
-
-// Diagnostic check to inspect image URL types
-app.get('/api/health/diagnostics', async (req, res) => {
-  try {
-    await ensureDB();
-    const t0 = Date.now();
-    const top12 = await Product.find({ isPublished: true })
-      .select('name slug images')
-      .sort({ subcategory: 1, isFeatured: -1, sortOrder: 1, createdAt: -1 })
-      .limit(12)
-      .lean();
-    const tTop12 = Date.now() - t0;
-
-    const analysis = top12.map((p) => {
-      let totalBytes = 0;
-      const imgs = (p.images || []).map((img) => {
-        const len = img.url?.length || 0;
-        totalBytes += len;
-        return {
-          isCover: img.isCover,
-          urlPrefix: img.url ? img.url.substring(0, 30) : '',
-          urlLength: len,
-          isBase64: img.url?.startsWith('data:image'),
-        };
-      });
-      return {
-        name: p.name,
-        slug: p.slug,
-        imageCount: imgs.length,
-        totalDocImageBytes: totalBytes,
-        totalDocImageKb: Math.round(totalBytes / 1024),
-        images: imgs,
-      };
-    });
-
-    res.status(200).json({
-      success: true,
-      tTop12Ms: tTop12,
-      analysis,
-    });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
 });
 
 // Keep old e27 category/product links working (e.g. ?category=e27-wall-lamp)
