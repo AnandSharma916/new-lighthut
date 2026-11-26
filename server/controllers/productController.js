@@ -1,7 +1,7 @@
 import Product from '../models/Product.js';
 import Category from '../models/Category.js';
 import { slugify } from '../utils/slugify.js';
-import { clearCatalogCache } from '../utils/catalogCache.js';
+import { clearCatalogCache, getCachedQueryResult, setCachedQueryResult } from '../utils/catalogCache.js';
 
 const CATEGORY_FAMILY_MAP = {
   'pendant-lamp': ['pendant-lamp', 'led-hanging-lamp', 'classic-hanging-lamp', 'led-profile-pendant', 'profile-pendant', 'pendant'],
@@ -86,6 +86,16 @@ export const getProducts = async (req, res, next) => {
       limit = 12,
       admin = 'false',
     } = req.query;
+
+    const isPublicQuery = admin !== 'true';
+    const cacheKey = isPublicQuery ? `products_${JSON.stringify(req.query)}` : null;
+    if (cacheKey) {
+      const cached = getCachedQueryResult(cacheKey);
+      if (cached) {
+        res.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120');
+        return res.status(200).json(cached);
+      }
+    }
 
     const query = {};
 
@@ -371,14 +381,21 @@ export const getProducts = async (req, res, next) => {
           };
         });
 
-    res.status(200).json({
+    const payload = {
       success: true,
       count: products.length,
       total,
       page: pageNumber,
       totalPages: Math.ceil(total / pageSize),
       products,
-    });
+    };
+
+    if (cacheKey) {
+      setCachedQueryResult(cacheKey, payload);
+      res.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120');
+    }
+
+    res.status(200).json(payload);
   } catch (error) {
     next(error);
   }

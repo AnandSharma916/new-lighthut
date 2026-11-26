@@ -6,6 +6,7 @@ import HomepageSection from '../models/HomepageSection.js';
 export const getHomepage = async (req, res, next) => {
   try {
     const sections = await HomepageSection.find({ isEnabled: true }).sort({ order: 1 });
+    res.set('Cache-Control', 'public, s-maxage=120, stale-while-revalidate=300');
     res.status(200).json({
       success: true,
       count: sections.length,

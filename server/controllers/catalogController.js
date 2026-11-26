@@ -1,7 +1,12 @@
 import Product from '../models/Product.js';
 import Category from '../models/Category.js';
 import { STANDALONE_SUBCAT_MAP } from './productController.js';
-import { getCachedCategoriesMetadata, setCachedCategoriesMetadata } from '../utils/catalogCache.js';
+import {
+  getCachedCategoriesMetadata,
+  setCachedCategoriesMetadata,
+  getCachedQueryResult,
+  setCachedQueryResult,
+} from '../utils/catalogCache.js';
 
 /**
  * ============================================================================
@@ -560,6 +565,13 @@ export const getCatalog = async (req, res, next) => {
       limit = 24,
     } = req.query;
 
+    const cacheKey = `catalog_${JSON.stringify(req.query)}`;
+    const cachedResponse = getCachedQueryResult(cacheKey);
+    if (cachedResponse) {
+      res.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120');
+      return res.status(200).json(cachedResponse);
+    }
+
     const query = { isPublished: true };
 
     // 1. Featured Filter
@@ -1025,7 +1037,7 @@ export const getCatalog = async (req, res, next) => {
 
     const totalPages = Math.ceil(totalMatching / pageSize) || 1;
 
-    res.status(200).json({
+    const responsePayload = {
       success: true,
       activeCategory,
       categories: structuredCategories,
@@ -1039,7 +1051,11 @@ export const getCatalog = async (req, res, next) => {
         hasNextPage: pageNumber < totalPages,
         hasPrevPage: pageNumber > 1,
       },
-    });
+    };
+
+    setCachedQueryResult(cacheKey, responsePayload);
+    res.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120');
+    res.status(200).json(responsePayload);
   } catch (error) {
     next(error);
   }

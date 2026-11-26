@@ -15,6 +15,10 @@ export const getCategories = async (req, res, next) => {
       .sort({ sortOrder: 1, createdAt: 1 })
       .populate('productsCount');
 
+    if (!isAdmin) {
+      res.set('Cache-Control', 'public, s-maxage=120, stale-while-revalidate=300');
+    }
+
     res.status(200).json({
       success: true,
       count: categories.length,
