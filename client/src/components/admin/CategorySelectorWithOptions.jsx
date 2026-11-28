@@ -42,10 +42,8 @@ export const CategorySelectorWithOptions = ({
 
   // Sort categories: Master categories first, then any other categories
   const masterSlugsSet = new Set(MASTER_CATEGORY_SLUGS);
-  const sortedCategories = [
-    ...categories.filter((c) => masterSlugsSet.has(c.slug)),
-    ...categories.filter((c) => !masterSlugsSet.has(c.slug)),
-  ];
+  const masterCategories = categories.filter((c) => masterSlugsSet.has(c.slug));
+  const otherCategories = categories.filter((c) => !masterSlugsSet.has(c.slug));
 
   // Handle category change cleanly
   const handleCategoryChange = (newCatId) => {
@@ -100,14 +98,18 @@ export const CategorySelectorWithOptions = ({
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-      {/* ── CATEGORY SELECTION ── */}
+      {/* ── STEP 1: CATEGORY SELECTION ── */}
       <div className="space-y-2">
-        <label className="text-xs font-semibold uppercase tracking-wider text-neutral-300 flex items-center gap-1.5">
-          <Layers className="w-3.5 h-3.5 text-[#DC2626]" />
-          <span>Product Category</span>
-          <span className="text-[11px] text-neutral-500 font-normal lowercase">(optional)</span>
-        </label>
+        <div className="flex items-center justify-between">
+          <label className="text-xs font-semibold uppercase tracking-wider text-neutral-300 flex items-center gap-1.5">
+            <Layers className="w-3.5 h-3.5 text-[#DC2626]" />
+            <span>Product Category</span>
+            <span className="text-[11px] text-neutral-500 font-normal lowercase">(optional)</span>
+          </label>
+          <span className="text-[10px] text-neutral-400 font-mono">Step 1</span>
+        </div>
 
+        {/* The Category Dropdown with sub-types count */}
         <select
           value={effectiveCategoryObj?._id || ''}
           onChange={(e) => handleCategoryChange(e.target.value)}
@@ -117,28 +119,45 @@ export const CategorySelectorWithOptions = ({
           <option value="" className="bg-[#14171d] text-neutral-400">
             -- Choose a category (Optional) --
           </option>
-          {sortedCategories.map((cat) => (
-            <option key={cat._id} value={cat._id} className="bg-[#14171d] text-white">
-              {cat.icon || '💡'} {cat.name}
-            </option>
-          ))}
+          {masterCategories.length > 0 && (
+            <optgroup label="Primary Architectural Categories" className="bg-[#14171d] text-neutral-300 font-semibold">
+              {masterCategories.map((cat) => (
+                <option key={cat._id} value={cat._id} className="bg-[#14171d] text-white">
+                  {cat.icon || '💡'} {cat.name} ({cat.subcategories?.length || 0} sub-types)
+                </option>
+              ))}
+            </optgroup>
+          )}
+          {otherCategories.length > 0 && (
+            <optgroup label="Other / Standalone Categories" className="bg-[#14171d] text-neutral-400 font-normal">
+              {otherCategories.map((cat) => (
+                <option key={cat._id} value={cat._id} className="bg-[#14171d] text-neutral-300">
+                  {cat.icon || '💡'} {cat.name}
+                </option>
+              ))}
+            </optgroup>
+          )}
         </select>
 
         {effectiveCategoryObj && (
           <p className="text-[11px] text-neutral-400">
-            Selected: <strong className="text-white">{effectiveCategoryObj.name}</strong>
+            Selected: <strong className="text-white">{effectiveCategoryObj.name}</strong> (slug: /{effectiveCategoryObj.slug || '-'})
           </p>
         )}
       </div>
 
-      {/* ── SUBCATEGORY SELECTION ── */}
+      {/* ── STEP 2: SUBCATEGORY SELECTION ── */}
       <div className="space-y-2">
-        <label className="text-xs font-semibold uppercase tracking-wider text-neutral-300 flex items-center gap-1.5">
-          <Package className="w-3.5 h-3.5 text-[#DC2626]" />
-          <span>Subcategory / Type Option</span>
-          <span className="text-[11px] text-neutral-500 font-normal lowercase">(optional)</span>
-        </label>
+        <div className="flex items-center justify-between">
+          <label className="text-xs font-semibold uppercase tracking-wider text-neutral-300 flex items-center gap-1.5">
+            <Package className="w-3.5 h-3.5 text-[#DC2626]" />
+            <span>Subcategory / Type Option</span>
+            <span className="text-[11px] text-neutral-500 font-normal lowercase">(optional)</span>
+          </label>
+          <span className="text-[10px] text-neutral-400 font-mono">Step 2</span>
+        </div>
 
+        {/* Subcategory Dropdown */}
         <select
           value={effectiveSubSlug}
           onChange={(e) => handleSubcategoryChange(e.target.value)}

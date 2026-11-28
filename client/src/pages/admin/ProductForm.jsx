@@ -440,8 +440,25 @@ export const ProductForm = () => {
       const otherItems = validImages.filter((img) => !img.isCover);
       const finalImagesList = coverItem ? [coverItem, ...otherItems] : validImages;
 
-      const subSlug = (formData.subcategory || '').trim().toLowerCase();
+      let subSlug = (formData.subcategory || '').trim().toLowerCase();
       let subName = (formData.subcategoryName || '').trim();
+
+      // If subcategory was not explicitly selected, resolve canonical from category and name/sku
+      if (!subSlug) {
+        const resolved = resolveCanonicalCategoryAndSub(
+          categories,
+          formData.category,
+          '',
+          '',
+          formData.name.trim(),
+          cleanSku
+        );
+        if (resolved.subcategory) {
+          subSlug = resolved.subcategory;
+          subName = resolved.subcategoryName;
+        }
+      }
+
       if (subSlug && !subName) {
         subName = subSlug
           .split('-')

@@ -368,23 +368,35 @@ export const getProducts = async (req, res, next) => {
       productQuery,
     ]);
 
-    const products = isAdmin
-      ? rawProducts
-      : rawProducts.map((p) => {
-          const coverUrl = `/api/products/${p._id}/image/cover`;
-          const hasSecondary = Array.isArray(p.images) && p.images.length > 1;
-          const hoverUrl = hasSecondary ? `/api/products/${p._id}/image/1` : coverUrl;
+    const products = rawProducts.map((p) => {
+      const coverUrl = `/api/products/${p._id}/image/cover`;
+      const hasSecondary = Array.isArray(p.images) && p.images.length > 1;
+      const hoverUrl = hasSecondary ? `/api/products/${p._id}/image/1` : coverUrl;
 
-          return {
-            ...p,
-            images: [
-              { url: coverUrl, isCover: true, alt: p.name },
-              ...(hasSecondary ? [{ url: hoverUrl, isCover: false, alt: `${p.name} Alternate` }] : [])
-            ],
-            primaryImage: coverUrl,
-            secondaryImage: hoverUrl,
-          };
-        });
+      // Clean images array so large base64 strings don't bloat list payloads
+      const sanitizedImages = (p.images || []).map((img, idx) => {
+        const u = typeof img === 'string' ? img : img?.url || '';
+        const isBase64 = u.startsWith('data:image/');
+        const safeUrl = isBase64 ? `/api/products/${p._id}/image/${idx}` : u;
+        return typeof img === 'string'
+          ? safeUrl
+          : { ...img, url: safeUrl };
+      });
+
+      const mainIsBase64 = (p.mainImage || '').startsWith('data:image/');
+      const safeMain = mainIsBase64 ? coverUrl : (p.mainImage || coverUrl);
+
+      return {
+        ...p,
+        mainImage: safeMain,
+        images: sanitizedImages.length > 0 ? sanitizedImages : [
+          { url: coverUrl, isCover: true, alt: p.name },
+          ...(hasSecondary ? [{ url: hoverUrl, isCover: false, alt: `${p.name} Alternate` }] : [])
+        ],
+        primaryImage: safeMain,
+        secondaryImage: hoverUrl,
+      };
+    });
 
     const payload = {
       success: true,
@@ -723,6 +735,10 @@ export const createProduct = async (req, res, next) => {
     let targetCategory = category || null;
     let categoryExists = null;
 
+    // Resolve subcategory and display name
+    let finalSubcategory = (subcategory || sub || '').trim().toLowerCase();
+    let finalSubcategoryName = (subcategoryName || '').trim();
+
     if (targetCategory) {
       if (typeof targetCategory === 'string' && targetCategory.match(/^[0-9a-fA-F]{24}$/)) {
         categoryExists = await Category.findById(targetCategory);
@@ -752,10 +768,6 @@ export const createProduct = async (req, res, next) => {
         targetCategory = null;
       }
     }
-
-    // Resolve subcategory and display name
-    let finalSubcategory = (subcategory || sub || '').trim().toLowerCase();
-    let finalSubcategoryName = (subcategoryName || '').trim();
 
     if (finalSubcategory && categoryExists?.subcategories?.length > 0) {
       const matchedSub = categoryExists.subcategories.find(
