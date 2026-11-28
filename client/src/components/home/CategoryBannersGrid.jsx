@@ -81,8 +81,7 @@ export const CategoryBannersGrid = () => {
                   }}
                   alt={banner.title}
                   className="w-full h-full object-cover object-center transform scale-100 group-hover:scale-108 group-hover:opacity-0 transition-all duration-700 ease-out"
-                  loading="lazy"
-                  decoding="async"
+                  loading="eager"
                 />
 
                 {/* ── 2. Alternate Hover Image (Smoothly fades in & gently scales on hover) ── */}
@@ -93,8 +92,7 @@ export const CategoryBannersGrid = () => {
                   }}
                   alt={`${banner.title} alternate`}
                   className="absolute inset-0 w-full h-full object-cover object-center opacity-0 group-hover:opacity-100 transform scale-95 group-hover:scale-105 transition-all duration-700 ease-out pointer-events-none"
-                  loading="lazy"
-                  decoding="async"
+                  loading="eager"
                 />
 
                 {/* ── 3. Subtle Default Category Label (Disappears on hover when full content reveals) ── */}

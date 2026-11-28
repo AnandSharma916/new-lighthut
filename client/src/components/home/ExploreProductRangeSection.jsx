@@ -24,8 +24,8 @@ export const ExploreProductRangeSection = ({ section }) => {
   }, []);
   const count = categories.length;
 
-  // Create a 3-set extended array for smooth infinite sliding with minimum memory footprint
-  const REPEAT_COUNT = 3;
+  // Create an extended array (5 sets = 50 cards) for infinite smooth sliding
+  const REPEAT_COUNT = 5;
   const extendedCategories = React.useMemo(() => {
     const list = [];
     for (let r = 0; r < REPEAT_COUNT; r++) {
@@ -36,8 +36,8 @@ export const ExploreProductRangeSection = ({ section }) => {
     return list;
   }, [categories]);
 
-  // Start with Chandelier (index 2) in the center set (set 1)
-  const initialIndex = 1 * count + 2;
+  // Start with Chandelier (index 2) in the center repeated set (set 2, index 22)
+  const initialIndex = 2 * count + 2;
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [withTransition, setWithTransition] = useState(true);
   const [isPaused, setIsPaused] = useState(false);
@@ -358,7 +358,6 @@ export const ExploreProductRangeSection = ({ section }) => {
                     alt={item.name}
                     className="w-full h-full object-cover object-center transform transition-transform duration-700 ease-out hover:scale-105 pointer-events-none filter brightness-[1.03] contrast-[1.03]"
                     loading="lazy"
-                    decoding="async"
                   />
 
                   {/* Gradient Shadow Overlay for Text Readability (Subtle & Clear) */}

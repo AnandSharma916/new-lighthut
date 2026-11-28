@@ -607,25 +607,8 @@ export const ProductList = () => {
         }
       });
 
-      let subSlug = (form.subcategory || '').trim().toLowerCase();
+      const subSlug = (form.subcategory || '').trim().toLowerCase();
       let subName = (form.subcategoryName || '').trim();
-
-      // If subcategory was not explicitly selected, resolve canonical from category and name/sku
-      if (!subSlug) {
-        const resolved = resolveCanonicalCategoryAndSub(
-          categories,
-          chosenCatId,
-          '',
-          '',
-          form.name.trim(),
-          form.sku.trim()
-        );
-        if (resolved.subcategory) {
-          subSlug = resolved.subcategory;
-          subName = resolved.subcategoryName;
-        }
-      }
-
       if (subSlug && !subName) {
         subName = subSlug
           .split('-')
@@ -853,18 +836,15 @@ export const ProductList = () => {
                             <span className="truncate max-w-[140px]">{prod.category?.name || 'Category'}</span>
                           </span>
                           {(() => {
-                            const { subcategoryName, subcategory } = resolveCanonicalCategoryAndSub(
-                              categories,
-                              prod.category,
-                              prod.subcategory,
-                              prod.subcategoryName,
-                              prod.name || prod.title,
-                              prod.sku
+                            const combined = `${prod.name || prod.title || ''} ${prod.sku || ''}`.toLowerCase();
+                            const subDisplay = prod.subcategoryName || prod.subcategory || (
+                              combined.includes('led') ? 'LED Chandelier' :
+                              combined.includes('glass') ? 'Glass Chandelier' :
+                              (combined.includes('antique') || combined.includes('antic') || combined.includes('4012')) ? 'Antique Chandelier' : ''
                             );
-                            const subDisplay = subcategoryName || subcategory || prod.subcategoryName || prod.subcategory;
                             return subDisplay ? (
-                              <span className="text-[10px] px-2 py-0.5 rounded bg-white/5 text-neutral-200 border border-white/10 w-fit font-mono flex items-center gap-1">
-                                <span className="text-[#DC2626] font-bold">↳</span> {subDisplay}
+                              <span className="text-[10px] px-2 py-0.5 rounded bg-white/5 text-neutral-300 border border-white/10 w-fit font-mono">
+                                ↳ {subDisplay}
                               </span>
                             ) : (
                               <span className="text-[9.5px] text-neutral-500 italic">General / Direct</span>

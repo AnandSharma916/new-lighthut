@@ -1,4 +1,3 @@
-import React, { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useParams, useLocation } from 'react-router-dom';
 
 // Context Providers
@@ -9,23 +8,16 @@ import { ErrorBoundary } from './components/common/ErrorBoundary';
 
 // Layouts
 import { PublicLayout } from './layouts/PublicLayout';
+import { AdminLayout } from './components/admin/AdminLayout';
 
-// Core Public Pages (Eagerly loaded for instant initial render)
+// Public Pages
 import { Home } from './pages/public/Home';
 import { Catalog } from './pages/public/Catalog';
-
-// Lazy-Loaded Public Secondary Pages
-const ProductDetail = lazy(() => import('./pages/public/ProductDetail').then((m) => ({ default: m.ProductDetail })));
-const Projects = lazy(() => import('./pages/public/Projects').then((m) => ({ default: m.Projects })));
-const About = lazy(() => import('./pages/public/About').then((m) => ({ default: m.About })));
-const Contact = lazy(() => import('./pages/public/Contact').then((m) => ({ default: m.Contact })));
-const NotFound = lazy(() => import('./pages/public/NotFound').then((m) => ({ default: m.NotFound })));
-
-// Lazy-Loaded Admin Suite (Keeps public initial bundle ultra-lightweight)
-const AdminLayout = lazy(() => import('./components/admin/AdminLayout').then((m) => ({ default: m.AdminLayout })));
-const AdminLogin = lazy(() => import('./pages/admin/AdminLogin').then((m) => ({ default: m.AdminLogin })));
-const ProductList = lazy(() => import('./pages/admin/ProductList').then((m) => ({ default: m.ProductList })));
-const ProductForm = lazy(() => import('./pages/admin/ProductForm').then((m) => ({ default: m.ProductForm })));
+import { ProductDetail } from './pages/public/ProductDetail';
+import { Projects } from './pages/public/Projects';
+import { About } from './pages/public/About';
+import { Contact } from './pages/public/Contact';
+import { NotFound } from './pages/public/NotFound';
 
 // Helper: Seamlessly redirect category URLs to the main catalog page with query parameters
 function CategoryRedirect() {
@@ -38,7 +30,7 @@ function CategoryRedirect() {
   return <Navigate to={`/catalog${query ? `?${query}` : ''}`} replace />;
 }
 
-// Helper: Old links carried the "e27" label (e.g. ?category=e27-wall-lamp); send them to current URLs
+// Helper: Old links carried the "e27" label (e.g. ?category=e27-wall-lamp); send them to the current URLs
 function LegacySlugRedirect() {
   const { pathname, search, hash } = useLocation();
   const url = `${pathname}${search}`;
@@ -50,13 +42,16 @@ function LegacySlugRedirect() {
   return <Navigate to={`${next}${hash}`} replace />;
 }
 
-function PageFallback() {
-  return (
-    <div className="min-h-[50vh] flex flex-col items-center justify-center p-8">
-      <div className="w-8 h-8 rounded-full border-2 border-white/10 border-t-[#DC2626] animate-spin" />
-    </div>
-  );
-}
+// Admin Pages
+import { AdminLogin } from './pages/admin/AdminLogin';
+import { Dashboard } from './pages/admin/Dashboard';
+import { ProductList } from './pages/admin/ProductList';
+import { ProductForm } from './pages/admin/ProductForm';
+import { CategoryManagement } from './pages/admin/CategoryManagement';
+import { HomepageCms } from './pages/admin/HomepageCms';
+import { InquiryList } from './pages/admin/InquiryList';
+import { MediaLibrary } from './pages/admin/MediaLibrary';
+import { SiteSettingsPage } from './pages/admin/SiteSettingsPage';
 
 function App() {
   return (
@@ -65,44 +60,42 @@ function App() {
         <SettingsProvider>
           <AuthProvider>
             <BrowserRouter>
-              <LegacySlugRedirect />
-              <Suspense fallback={<PageFallback />}>
-                <Routes>
-                  {/* Public Storefront Layout */}
-                  <Route path="/" element={<PublicLayout />}>
-                    <Route index element={<Home />} />
-                    <Route path="catalog" element={<Catalog />} />
-                    <Route path="products" element={<Navigate to="/catalog" replace />} />
-                    <Route path="categories" element={<Navigate to="/catalog" replace />} />
-                    <Route path="category/:slug" element={<CategoryRedirect />} />
-                    <Route path="category/:slug/:subSlug" element={<CategoryRedirect />} />
-                    <Route path="product/:slug" element={<ProductDetail />} />
-                    <Route path="projects" element={<Projects />} />
-                    <Route path="about" element={<About />} />
-                    <Route path="contact" element={<Contact />} />
-                    <Route path="*" element={<NotFound />} />
-                  </Route>
+            <LegacySlugRedirect />
+            <Routes>
+              {/* Public Storefront Layout */}
+              <Route path="/" element={<PublicLayout />}>
+                <Route index element={<Home />} />
+                <Route path="catalog" element={<Catalog />} />
+                <Route path="products" element={<Navigate to="/catalog" replace />} />
+                <Route path="categories" element={<Navigate to="/catalog" replace />} />
+                <Route path="category/:slug" element={<CategoryRedirect />} />
+                <Route path="category/:slug/:subSlug" element={<CategoryRedirect />} />
+                <Route path="product/:slug" element={<ProductDetail />} />
+                <Route path="projects" element={<Projects />} />
+                <Route path="about" element={<About />} />
+                <Route path="contact" element={<Contact />} />
+                <Route path="*" element={<NotFound />} />
+              </Route>
 
-                  {/* Admin Portal Authentication */}
-                  <Route path="/admin/login" element={<AdminLogin />} />
+              {/* Admin Portal Authentication */}
+              <Route path="/admin/login" element={<AdminLogin />} />
 
-                  {/* Protected Admin Console - Dedicated Catalog Backend */}
-                  <Route path="/admin" element={<AdminLayout />}>
-                    <Route index element={<Navigate to="/admin/products" replace />} />
-                    <Route path="products" element={<ProductList />} />
-                    <Route path="products/new" element={<ProductForm />} />
-                    <Route path="products/edit/:id" element={<ProductForm />} />
-                    <Route path="catalog" element={<Navigate to="/admin/products" replace />} />
-                    <Route path="dashboard" element={<Navigate to="/admin/products" replace />} />
-                    <Route path="*" element={<Navigate to="/admin/products" replace />} />
-                  </Route>
-                </Routes>
-              </Suspense>
-            </BrowserRouter>
-          </AuthProvider>
-        </SettingsProvider>
-      </ToastProvider>
-    </ErrorBoundary>
+              {/* Protected Admin Console - Dedicated Catalog Backend */}
+              <Route path="/admin" element={<AdminLayout />}>
+                <Route index element={<Navigate to="/admin/products" replace />} />
+                <Route path="products" element={<ProductList />} />
+                <Route path="products/new" element={<ProductForm />} />
+                <Route path="products/edit/:id" element={<ProductForm />} />
+                <Route path="catalog" element={<Navigate to="/admin/products" replace />} />
+                <Route path="dashboard" element={<Navigate to="/admin/products" replace />} />
+                <Route path="*" element={<Navigate to="/admin/products" replace />} />
+              </Route>
+            </Routes>
+          </BrowserRouter>
+        </AuthProvider>
+      </SettingsProvider>
+    </ToastProvider>
+  </ErrorBoundary>
   );
 }
 

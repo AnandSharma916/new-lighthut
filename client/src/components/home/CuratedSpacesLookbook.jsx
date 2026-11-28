@@ -303,8 +303,7 @@ export const CuratedSpacesLookbook = ({ section }) => {
               src="/banner-empire.jpg"
               alt="Empire Collection - Architectural Living"
               className="w-full h-full object-cover object-center transform group-hover:scale-108 transition-transform duration-1000 ease-out filter brightness-100 contrast-[1.02]"
-              loading="lazy"
-              decoding="async"
+              loading="eager"
             />
 
             {/* Subtle Bottom Gradient for Action Button */}
@@ -331,8 +330,7 @@ export const CuratedSpacesLookbook = ({ section }) => {
               src="/banner-amalfi.jpg"
               alt="Vita Amalfi - Intimate Ambient Illumination"
               className="w-full h-full object-cover object-center transform group-hover:scale-108 transition-transform duration-1000 ease-out filter brightness-100 contrast-[1.02]"
-              loading="lazy"
-              decoding="async"
+              loading="eager"
             />
 
             {/* Subtle Bottom Gradient for Action Button */}
@@ -433,7 +431,6 @@ export const CuratedSpacesLookbook = ({ section }) => {
                     alt={space.title}
                     className="w-full h-full object-cover object-center transform group-hover:scale-106 transition-transform duration-700 ease-out pointer-events-none select-none"
                     loading="lazy"
-                    decoding="async"
                   />
 
                   {/* Gradient Overlay for Text Readability */}

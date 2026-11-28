@@ -147,9 +147,7 @@ export const HeroSection = ({ section }) => {
                 className={`w-full h-full object-cover object-center filter brightness-[1.08] contrast-[1.04] saturate-[1.15] transform transition-transform duration-[8000ms] ease-out ${
                   isActive ? 'scale-105' : 'scale-100'
                 }`}
-                loading={idx === 0 ? 'eager' : 'lazy'}
-                fetchpriority={idx === 0 ? 'high' : 'low'}
-                decoding={idx === 0 ? 'sync' : 'async'}
+                loading="eager"
               />
             </div>
           );
